@@ -10,11 +10,13 @@ app.use(cors()); // Wajib agar FE (Next.js) bisa konek
 app.use(express.json()); // Agar bisa membaca body request format JSON
 app.use(express.urlencoded({ extended: true }));
 
-// Import Routes (Nanti kita buat file-nya)
+// Import Routes
 const depotRoutes = require('./routes/depotRoutes');
+const authRoutes = require('./routes/authRoutes'); // <-- BARU: Import rute autentikasi di sini
 
 // Gunakan Routes
 app.use('/api/depot', depotRoutes);
+app.use('/api/auth', authRoutes); // <-- BARU: Pasang rute autentikasi di sini
 
 // Route Test Dasar
 app.get('/', (req, res) => {
