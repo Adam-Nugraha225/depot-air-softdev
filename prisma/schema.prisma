@@ -1,0 +1,96 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id             String          @id @default(uuid())
+  email          String          @unique
+  password       String
+  name           String
+  phone          String?
+  role           String          @default("BUYER") // "BUYER" | "VENDOR"
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  vendorProfile  VendorProfile?
+  addresses      Address[]
+  paymentMethods PaymentMethod[]
+  ordersAsBuyer  Order[]         @relation("BuyerOrders")
+  ordersAsVendor Order[]         @relation("VendorOrders")
+  fleets         Fleet[]         @relation("VendorFleets")
+  sentMessages   Message[]       @relation("SentMessages")
+  recvMessages   Message[]       @relation("ReceivedMessages")
+}
+
+model VendorProfile {
+  id                 String   @id @default(uuid())
+  userId             String   @unique
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rating             Float    @default(0.0)
+  verificationStatus String   @default("VERIFIED") // "PENDING" | "VERIFIED"
+  profileCompletion  Int      @default(100)
+  specialty          String?  @default("Bulk Water, Bottled Water, Fleet Logistics")
+  mainLocation       String?
+}
+
+model Address {
+  id          String  @id @default(uuid())
+  userId      String
+  user        User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  label       String  
+  addressLine String
+  isPrimary   Boolean @default(false)
+}
+
+model PaymentMethod {
+  id      String @id @default(uuid())
+  userId  String
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type    String 
+  details String 
+}
+
+model Order {
+  id            String   @id @default(uuid())
+  orderNumber   String   @unique 
+  buyerId       String
+  vendorId      String
+  volume        Int      
+  totalPrice    Float
+  status        String   @default("PENDING") // "PENDING" | "SELESAI" | "DIBATALKAN"
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  buyer         User     @relation("BuyerOrders", fields: [buyerId], references: [id])
+  vendor        User     @relation("VendorOrders", fields: [vendorId], references: [id])
+  assignedFleet Fleet?   @relation(fields: [fleetId], references: [id])
+  fleetId       String?
+}
+
+model Fleet {
+  id         String  @id @default(uuid())
+  vendorId   String
+  vendor     User    @relation("VendorFleets", fields: [vendorId], references: [id])
+  truckId    String  
+  driverName String
+  status     String  @default("SIAGA") // "AKTIF" | "SEDANG JALAN" | "SIAGA"
+  lat        Float?
+  lng        Float?
+  orders     Order[]
+}
+
+model Message {
+  id         String   @id @default(uuid())
+  senderId   String
+  receiverId String
+  content    String
+  createdAt  DateTime @default(now())
+  
+  sender     User     @relation("SentMessages", fields: [senderId], references: [id])
+  receiver   User     @relation("ReceivedMessages", fields: [receiverId], references: [id])
+}
