@@ -10,6 +10,8 @@ router.put('/profile', userController.updateProfile);
 
 router.get('/addresses', userController.getAddresses);
 router.post('/addresses', userController.addAddress);
+router.put('/addresses/:id', userController.updateAddress);
+router.delete('/addresses/:id', userController.deleteAddress);
 
 router.get('/payment-methods', userController.getPaymentMethods);
 router.post('/payment-methods', userController.addPaymentMethod);

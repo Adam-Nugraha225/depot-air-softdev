@@ -76,6 +76,61 @@ exports.addAddress = async (req, res, next) => {
   }
 };
 
+exports.updateAddress = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { label, addressLine, isPrimary } = req.body;
+
+    const existingAddress = await prisma.address.findUnique({
+      where: { id }
+    });
+
+    if (!existingAddress) return errorResponse(res, 'Address not found', 404);
+    if (existingAddress.userId !== req.user.userId) return errorResponse(res, 'Forbidden', 403);
+
+    if (isPrimary) {
+      await prisma.address.updateMany({
+        where: { userId: req.user.userId },
+        data: { isPrimary: false }
+      });
+    }
+
+    const address = await prisma.address.update({
+      where: { id },
+      data: {
+        label,
+        addressLine,
+        isPrimary: isPrimary || false
+      }
+    });
+
+    return successResponse(res, address, 'Address updated successfully');
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.deleteAddress = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    const existingAddress = await prisma.address.findUnique({
+      where: { id }
+    });
+
+    if (!existingAddress) return errorResponse(res, 'Address not found', 404);
+    if (existingAddress.userId !== req.user.userId) return errorResponse(res, 'Forbidden', 403);
+
+    await prisma.address.delete({
+      where: { id }
+    });
+
+    return successResponse(res, null, 'Address deleted successfully');
+  } catch (error) {
+    next(error);
+  }
+};
+
 exports.getPaymentMethods = async (req, res, next) => {
   try {
     const methods = await prisma.paymentMethod.findMany({
