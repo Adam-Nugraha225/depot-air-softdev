@@ -3,10 +3,29 @@ const { successResponse, errorResponse } = require('../utils/response');
 
 exports.createOrder = async (req, res, next) => {
   try {
-    const { vendorId, volume, totalPrice, deliveryAddressId } = req.body;
+    const { 
+      vendorId, volume, paymentMethod, serviceFee = 0, 
+      deliveryNotes, waterType, deliverySchedule 
+    } = req.body;
+
+    // Fetch vendor profile to get pricePerLiter
+    const vendor = await prisma.user.findUnique({
+      where: { id: vendorId },
+      include: { vendorProfile: true }
+    });
+
+    if (!vendor || !vendor.vendorProfile) {
+      return errorResponse(res, 'Vendor or vendor profile not found', 404);
+    }
+
+    const pricePerLiter = vendor.vendorProfile.pricePerLiter || 300;
+    const totalPrice = (volume * pricePerLiter) + parseFloat(serviceFee);
 
     // Generate unique order number
-    const orderNumber = `#VH-${Math.floor(10000 + Math.random() * 90000)}`;
+    const orderNumber = `#VH-${Math.floor(10000 + Math.random() * 90000)}-X90`;
+
+    // Simulate Payment logic for MVP
+    const paymentStatus = paymentMethod === 'Cash On Delivery (COD)' ? 'PENDING' : 'LUNAS';
 
     const order = await prisma.order.create({
       data: {
@@ -14,7 +33,15 @@ exports.createOrder = async (req, res, next) => {
         buyerId: req.user.userId,
         vendorId,
         volume,
+        pricePerLiter,
+        serviceFee: parseFloat(serviceFee),
         totalPrice,
+        paymentMethod,
+        paymentStatus,
+        deliveryNotes,
+        waterType,
+        deliverySchedule,
+        status: 'MENUNGGU_KONFIRMASI'
       }
     });
 
@@ -48,7 +75,7 @@ exports.getOrders = async (req, res, next) => {
       include: {
         vendor: { select: { name: true } },
         buyer: { select: { name: true } },
-        assignedFleet: { select: { truckId: true, driverName: true } }
+        assignedFleet: { select: { truckId: true, driverName: true, truckType: true, licensePlate: true } }
       },
       orderBy: { createdAt: 'desc' }
     });
@@ -82,7 +109,7 @@ exports.getOrderById = async (req, res, next) => {
 exports.updateOrderStatus = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { status } = req.body; // e.g., "SELESAI", "DIBATALKAN"
+    const { status } = req.body; // e.g., "DIKONFIRMASI", "DITOLAK", "DISIAPKAN"
 
     const order = await prisma.order.findUnique({ where: { id } });
     if (!order) return errorResponse(res, 'Order not found', 404);

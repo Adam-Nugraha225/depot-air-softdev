@@ -54,12 +54,12 @@ exports.getVendorById = async (req, res, next) => {
 
 exports.updateVendorProfile = async (req, res, next) => {
   try {
-    const { specialty, mainLocation } = req.body;
+    const { specialty, mainLocation, pricePerLiter, defaultCapacity } = req.body;
     
     const profile = await prisma.vendorProfile.upsert({
       where: { userId: req.user.userId },
-      update: { specialty, mainLocation },
-      create: { userId: req.user.userId, specialty, mainLocation }
+      update: { specialty, mainLocation, pricePerLiter, defaultCapacity },
+      create: { userId: req.user.userId, specialty, mainLocation, pricePerLiter, defaultCapacity }
     });
 
     return successResponse(res, profile, 'Vendor profile updated successfully');

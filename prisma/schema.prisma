@@ -36,15 +36,22 @@ model VendorProfile {
   profileCompletion  Int      @default(100)
   specialty          String?  @default("Bulk Water, Bottled Water, Fleet Logistics")
   mainLocation       String?
+  pricePerLiter      Float    @default(300)
+  defaultCapacity    Int      @default(8000)
 }
 
 model Address {
-  id          String  @id @default(uuid())
-  userId      String
-  user        User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  label       String  
-  addressLine String
-  isPrimary   Boolean @default(false)
+  id            String  @id @default(uuid())
+  userId        String
+  user          User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  recipientName String
+  province      String
+  city          String
+  district      String
+  postalCode    String
+  street        String
+  details       String?
+  isPrimary     Boolean @default(false)
 }
 
 model PaymentMethod {
@@ -56,32 +63,42 @@ model PaymentMethod {
 }
 
 model Order {
-  id            String   @id @default(uuid())
-  orderNumber   String   @unique 
-  buyerId       String
-  vendorId      String
-  volume        Int      
-  totalPrice    Float
-  status        String   @default("PENDING") // "PENDING" | "SELESAI" | "DIBATALKAN"
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id               String   @id @default(uuid())
+  orderNumber      String   @unique 
+  buyerId          String
+  vendorId         String
+  volume           Int      
+  pricePerLiter    Float
+  serviceFee       Float    @default(0)
+  totalPrice       Float
+  paymentMethod    String?
+  paymentStatus    String   @default("PENDING") // "PENDING" | "LUNAS" | "GAGAL"
+  deliveryNotes    String?
+  waterType        String?
+  deliverySchedule String?
+  status           String   @default("MENUNGGU_KONFIRMASI") // MENUNGGU_KONFIRMASI | DIKONFIRMASI | DISIAPKAN | DALAM_PERJALANAN | SELESAI | DITOLAK
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
   
-  buyer         User     @relation("BuyerOrders", fields: [buyerId], references: [id])
-  vendor        User     @relation("VendorOrders", fields: [vendorId], references: [id])
-  assignedFleet Fleet?   @relation(fields: [fleetId], references: [id])
-  fleetId       String?
+  buyer            User     @relation("BuyerOrders", fields: [buyerId], references: [id])
+  vendor           User     @relation("VendorOrders", fields: [vendorId], references: [id])
+  assignedFleet    Fleet?   @relation(fields: [fleetId], references: [id])
+  fleetId          String?
 }
 
 model Fleet {
-  id         String  @id @default(uuid())
-  vendorId   String
-  vendor     User    @relation("VendorFleets", fields: [vendorId], references: [id])
-  truckId    String  
-  driverName String
-  status     String  @default("SIAGA") // "AKTIF" | "SEDANG JALAN" | "SIAGA"
-  lat        Float?
-  lng        Float?
-  orders     Order[]
+  id           String  @id @default(uuid())
+  vendorId     String
+  vendor       User    @relation("VendorFleets", fields: [vendorId], references: [id])
+  truckId      String  
+  driverName   String
+  truckType    String? // e.g. Volvo FH16
+  licensePlate String?
+  capacity     Int?
+  status       String  @default("TERSEDIA") // "TERSEDIA" | "SEDANG_BERTUGAS" | "PEMELIHARAAN"
+  lat          Float?
+  lng          Float?
+  orders       Order[]
 }
 
 model Message {

@@ -44,7 +44,10 @@ exports.getAddresses = async (req, res, next) => {
 
 exports.addAddress = async (req, res, next) => {
   try {
-    const { label, addressLine, isPrimary } = req.body;
+    const { 
+      recipientName, province, city, district, 
+      postalCode, street, details, isPrimary 
+    } = req.body;
     
     // If setting as primary, unset other primaries
     if (isPrimary) {
@@ -57,8 +60,13 @@ exports.addAddress = async (req, res, next) => {
     const address = await prisma.address.create({
       data: {
         userId: req.user.userId,
-        label,
-        addressLine,
+        recipientName,
+        province,
+        city,
+        district,
+        postalCode,
+        street,
+        details,
         isPrimary: isPrimary || false
       }
     });

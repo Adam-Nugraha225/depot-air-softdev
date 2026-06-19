@@ -14,13 +14,16 @@ exports.getFleets = async (req, res, next) => {
 
 exports.addFleet = async (req, res, next) => {
   try {
-    const { truckId, driverName } = req.body;
+    const { truckId, driverName, truckType, licensePlate, capacity } = req.body;
     
     const fleet = await prisma.fleet.create({
       data: {
         vendorId: req.user.userId,
         truckId,
         driverName,
+        truckType,
+        licensePlate,
+        capacity: capacity ? parseInt(capacity) : null,
       }
     });
 
@@ -33,7 +36,7 @@ exports.addFleet = async (req, res, next) => {
 exports.updateFleetStatus = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { status, lat, lng } = req.body;
+    const { status, lat, lng } = req.body; // "TERSEDIA", "SEDANG_BERTUGAS", "PEMELIHARAAN"
 
     const fleet = await prisma.fleet.findUnique({ where: { id } });
     if (!fleet) return errorResponse(res, 'Fleet not found', 404);
@@ -67,12 +70,12 @@ exports.assignFleetToOrder = async (req, res, next) => {
     // Assign and update status
     const updatedOrder = await prisma.order.update({
       where: { id: orderId },
-      data: { fleetId, status: 'DIPROSES' }
+      data: { fleetId, status: 'DALAM_PERJALANAN' }
     });
 
     await prisma.fleet.update({
       where: { id: fleetId },
-      data: { status: 'SEDANG JALAN' }
+      data: { status: 'SEDANG_BERTUGAS' }
     });
 
     return successResponse(res, updatedOrder, 'Fleet assigned successfully');
