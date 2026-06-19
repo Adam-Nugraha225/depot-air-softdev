@@ -32,7 +32,7 @@ exports.getVendorById = async (req, res, next) => {
   try {
     const { id } = req.params;
     
-    const vendor = await prisma.user.findUnique({
+    const vendor = await prisma.user.findFirst({
       where: { id, role: 'VENDOR' },
       select: {
         id: true,

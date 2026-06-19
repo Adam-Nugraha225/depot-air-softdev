@@ -51,6 +51,11 @@ Distribusi air bersih dalam skala besar di Indonesia masih dilakukan secara konv
 | Teknologi | Kegunaan |
 |---|---|
 | **Next.js** | Framework UI (React) |
+| **React** | Library komponen UI |
+| **TypeScript** | Type safety untuk frontend |
+| **Tailwind CSS** | Styling utility-first |
+| **Axios** | HTTP client untuk komunikasi REST API |
+| **Lucide React** | Icon library |
 | **Vercel** | Deployment Frontend |
 
 ### Arsitektur
@@ -96,11 +101,33 @@ depot-air-softdev/
 └── README.md
 ```
 
+### Struktur Frontend
+
+```text
+depot-air-frontend/
+|-- public/
+|   `-- images/              # Asset gambar statis
+|-- src/
+|   |-- app/                 # Halaman App Router Next.js
+|   |   |-- login/           # Halaman login
+|   |   |-- register/        # Halaman register
+|   |   |-- buyer/           # Dashboard, transaksi, tracking, chat buyer
+|   |   `-- seller/          # Dashboard, pesanan, armada, tracking, chat vendor
+|   |-- components/          # Komponen UI dan layout
+|   |-- context/             # AuthContext dan state autentikasi
+|   |-- hooks/               # Custom hooks
+|   |-- lib/                 # Konfigurasi API client
+|   |-- styles/              # Global CSS
+|   `-- types/               # TypeScript type definitions
+|-- .env.example             # Contoh environment frontend
+|-- package.json
+`-- vercel.json              # Konfigurasi deployment Vercel
+```
 ---
 
 ## 📡 Dokumentasi API Endpoint
 
-Base URL (Lokal): `http://localhost:5001`
+Base URL (Lokal): `http://localhost:5000`
 
 > Semua endpoint (kecuali `/api/auth/*`) membutuhkan header:
 > `Authorization: Bearer <token>`
@@ -185,7 +212,7 @@ Buat file `.env` di root project:
 ```env
 DATABASE_URL="file:./prisma/dev.db"
 JWT_SECRET="your-secret-key-here"
-PORT=5001
+PORT=5000
 ```
 
 **4. Buat Tabel Database**
@@ -198,13 +225,55 @@ npx prisma generate
 ```bash
 npm run dev
 ```
-Server berjalan di `http://localhost:5001`
+Server berjalan di `http://localhost:5000`
 
 **6. (Opsional) Lihat Database via GUI**
 ```bash
 npx prisma studio
 ```
 Buka `http://localhost:5555` di browser.
+
+### Menjalankan Frontend
+
+Frontend berada di folder `depot-air-frontend/` dan berjalan sebagai aplikasi Next.js.
+
+**1. Masuk ke folder frontend**
+```bash
+cd depot-air-frontend
+```
+
+**2. Install dependensi frontend**
+```bash
+npm install
+```
+
+**3. Buat file environment frontend**
+Buat file `.env.local` di folder `depot-air-frontend/`:
+```env
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+NEXT_PUBLIC_APP_NAME=AquaLink
+NEXT_PUBLIC_API_URL=http://localhost:5000/api
+```
+
+**4. Jalankan frontend**
+```bash
+npm run dev
+```
+Frontend berjalan di `http://localhost:3000`.
+
+**5. Build frontend untuk production**
+```bash
+npm run build
+```
+
+### Akun Demo
+
+Jika database sudah diisi dengan `src/seed.js`, akun demo yang dapat dipakai:
+
+| Role | Email | Password |
+|---|---|---|
+| Buyer | `buyer@example.com` | `password123` |
+| Vendor | `vendor1@example.com` | `password123` |
 
 ---
 
@@ -229,8 +298,17 @@ Buka `http://localhost:5555` di browser.
 4. Deploy & jalankan build command: `npx prisma db push && node src/index.js`
 
 ### Frontend — Vercel
-- Hubungkan GitHub repo ke Vercel
-- Set environment variable `NEXT_PUBLIC_API_URL` ke URL backend yang sudah di-deploy
+1. Hubungkan repository GitHub ke Vercel.
+2. Set **Root Directory** ke `depot-air-frontend`.
+3. Set environment variable frontend:
+   ```env
+   NEXT_PUBLIC_APP_URL=https://domain-frontend-vercel.vercel.app
+   NEXT_PUBLIC_APP_NAME=AquaLink
+   NEXT_PUBLIC_API_URL=https://url-backend-production/api
+   ```
+4. Redeploy setelah environment variable diubah.
+
+> Catatan: `NEXT_PUBLIC_API_URL` tidak boleh memakai `localhost` saat deploy di Vercel. Gunakan URL backend production yang sudah online dan dapat diakses publik.
 
 ---
 
