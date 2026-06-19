@@ -41,10 +41,10 @@ export default function SellerOrders() {
     try {
       await orderAPI.updateOrderStatus(orderId, status);
       await loadOrders();
-      const statusMsg = status === 'DIPROSES' ? 'Pesanan berhasil dikonfirmasi!' :
-                        status === 'DIBATALKAN' ? 'Pesanan berhasil ditolak.' :
+      const statusMsg = status === 'DIKONFIRMASI' ? 'Pesanan berhasil dikonfirmasi!' :
+                        status === 'DITOLAK' ? 'Pesanan berhasil ditolak.' :
                         status === 'SELESAI' ? 'Pengiriman berhasil diselesaikan!' : 'Status pesanan diperbarui.';
-      const toastType = status === 'DIBATALKAN' ? 'warning' : 'success';
+      const toastType = status === 'DITOLAK' ? 'warning' : 'success';
       showToast(statusMsg, toastType as any);
     } catch {
       showToast('Gagal memperbarui status pesanan. Coba lagi.', 'error');
@@ -63,7 +63,7 @@ export default function SellerOrders() {
   }
 
   // Count active pending orders to display in the header action badge
-  const pendingCount = orders.filter(o => o.status === 'PENDING').length;
+  const pendingCount = orders.filter(o => o.status === 'MENUNGGU_KONFIRMASI').length;
 
   return (
     <div className="space-y-6 animate-fade-in text-xs">
@@ -87,10 +87,11 @@ export default function SellerOrders() {
       <div className="flex gap-2 overflow-x-auto pb-2">
         {[
           { key: 'ALL', label: 'Semua', count: orders.length },
-          { key: 'PENDING', label: 'Menunggu', count: orders.filter(o => o.status === 'PENDING').length },
-          { key: 'DIPROSES', label: 'Diproses', count: orders.filter(o => o.status === 'DIPROSES').length },
+          { key: 'MENUNGGU_KONFIRMASI', label: 'Menunggu', count: orders.filter(o => o.status === 'MENUNGGU_KONFIRMASI').length },
+          { key: 'DIKONFIRMASI', label: 'Dikonfirmasi', count: orders.filter(o => o.status === 'DIKONFIRMASI').length },
+          { key: 'DALAM_PERJALANAN', label: 'Dalam Perjalanan', count: orders.filter(o => o.status === 'DALAM_PERJALANAN').length },
           { key: 'SELESAI', label: 'Selesai', count: orders.filter(o => o.status === 'SELESAI').length },
-          { key: 'DIBATALKAN', label: 'Dibatalkan', count: orders.filter(o => o.status === 'DIBATALKAN').length },
+          { key: 'DITOLAK', label: 'Ditolak', count: orders.filter(o => o.status === 'DITOLAK').length },
         ].map(tab => (
           <button
             key={tab.key}
@@ -168,24 +169,28 @@ export default function SellerOrders() {
 
                 {/* Action footer triggers */}
                 <div className="flex gap-2.5 pt-3 border-t border-slate-50">
-                  {order.status === 'PENDING' ? (
+                  {order.status === 'MENUNGGU_KONFIRMASI' ? (
                     <>
                       <button
-                        onClick={() => handleStatusUpdate(order.id, 'DIBATALKAN')}
+                        onClick={() => handleStatusUpdate(order.id, 'DITOLAK')}
                         disabled={processingId === order.id}
                         className="flex-1 py-2.5 rounded-xl border border-red-200 bg-white hover:bg-red-50 text-red-600 font-bold text-[11px] transition-all disabled:opacity-50 text-center"
                       >
                         Tolak
                       </button>
                       <button
-                        onClick={() => handleStatusUpdate(order.id, 'DIPROSES')}
+                        onClick={() => handleStatusUpdate(order.id, 'DIKONFIRMASI')}
                         disabled={processingId === order.id}
                         className="flex-1 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-700 text-white font-bold text-[11px] transition-all disabled:opacity-50 text-center flex items-center justify-center gap-1"
                       >
                         {processingId === order.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Konfirmasi Pesanan'}
                       </button>
                     </>
-                  ) : order.status === 'DIPROSES' ? (
+                  ) : order.status === 'DIKONFIRMASI' ? (
+                    <div className="w-full text-center py-2 bg-primary-50 rounded-xl text-[10px] text-primary-700 font-bold uppercase tracking-wider">
+                      Pesanan Dikonfirmasi (Tugaskan Armada)
+                    </div>
+                  ) : order.status === 'DALAM_PERJALANAN' ? (
                     <button
                       onClick={() => handleStatusUpdate(order.id, 'SELESAI')}
                       disabled={processingId === order.id}
@@ -196,8 +201,8 @@ export default function SellerOrders() {
                       Selesaikan Pengiriman
                     </button>
                   ) : (
-                    <div className="w-full text-center py-1 bg-slate-50 rounded-lg text-[10px] text-slate-400 font-bold uppercase tracking-wider">
-                      Pesanan {order.status}
+                    <div className="w-full text-center py-2 bg-slate-50 rounded-xl text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+                      Pesanan {order.status.replace('_', ' ')}
                     </div>
                   )}
                 </div>

@@ -47,8 +47,8 @@ export const userAPI = {
   getProfile: () => api.get('/users/profile'),
   updateProfile: (data: { name?: string; phone?: string }) => api.put('/users/profile', data),
   getAddresses: () => api.get('/users/addresses'),
-  addAddress: (data: { label: string; addressLine: string; isPrimary?: boolean }) => api.post('/users/addresses', data),
-  updateAddress: (id: string, data: { label: string; addressLine: string; isPrimary?: boolean }) => api.put(`/users/addresses/${id}`, data),
+  addAddress: (data: { recipientName: string; province: string; city: string; district: string; postalCode: string; street: string; details?: string; isPrimary?: boolean }) => api.post('/users/addresses', data),
+  updateAddress: (id: string, data: { recipientName: string; province: string; city: string; district: string; postalCode: string; street: string; details?: string; isPrimary?: boolean }) => api.put(`/users/addresses/${id}`, data),
   deleteAddress: (id: string) => api.delete(`/users/addresses/${id}`),
   getPaymentMethods: () => api.get('/users/payment-methods'),
   addPaymentMethod: (data: { type: string; details: string }) => api.post('/users/payment-methods', data),
@@ -58,12 +58,12 @@ export const userAPI = {
 export const vendorAPI = {
   getVendors: (search?: string) => api.get('/vendors', { params: { search } }),
   getVendorById: (id: string) => api.get(`/vendors/${id}`),
-  updateProfile: (data: { specialty?: string; mainLocation?: string }) => api.put('/vendors/profile', data),
+  updateProfile: (data: { specialty?: string; mainLocation?: string; pricePerLiter?: number; defaultCapacity?: number }) => api.put('/vendors/profile', data),
 };
 
 // Order APIs
 export const orderAPI = {
-  createOrder: (data: { vendorId: string; volume: number; totalPrice: number }) => api.post('/orders', data),
+  createOrder: (data: { vendorId: string; volume: number; paymentMethod?: string; serviceFee?: number; deliveryNotes?: string; waterType?: string; deliverySchedule?: string }) => api.post('/orders', data),
   getOrders: (params?: { status?: string; search?: string }) => api.get('/orders', { params }),
   getOrderById: (id: string) => api.get(`/orders/${id}`),
   updateOrderStatus: (id: string, status: string) => api.put(`/orders/${id}/status`, { status }),
@@ -72,7 +72,7 @@ export const orderAPI = {
 // Fleet APIs
 export const fleetAPI = {
   getFleets: () => api.get('/fleets'),
-  addFleet: (data: { truckId: string; driverName: string }) => api.post('/fleets', data),
+  addFleet: (data: { truckId: string; driverName: string; truckType?: string; licensePlate?: string; capacity?: number }) => api.post('/fleets', data),
   updateFleetStatus: (id: string, data: { status: string; lat?: number; lng?: number }) => api.put(`/fleets/${id}/status`, data),
   assignFleetToOrder: (data: { orderId: string; fleetId: string }) => api.post('/fleets/assign', data),
 };

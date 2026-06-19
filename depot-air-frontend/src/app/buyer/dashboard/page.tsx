@@ -13,6 +13,8 @@ interface Vendor {
     verificationStatus: string;
     specialty: string;
     mainLocation: string;
+    pricePerLiter: number;
+    defaultCapacity: number;
   };
 }
 
@@ -26,7 +28,7 @@ export default function BuyerDashboard() {
   const [orderLoading, setOrderLoading] = useState(false);
   const [orderSuccess, setOrderSuccess] = useState(false);
 
-  const pricePerLiter = 450;
+  // pricePerLiter and defaultCapacity come from each vendor's profile
 
   useEffect(() => {
     loadVendors();
@@ -49,15 +51,19 @@ export default function BuyerDashboard() {
 
   const handleOrder = () => {
     if (!selectedVendor) return;
+    const vp = selectedVendor.vendorProfile;
+    const price = vp?.pricePerLiter || 300;
+    const cap = vp?.defaultCapacity || 8000;
+    const total = price * cap;
     // Store selected vendor details in sessionStorage for the payment page
     sessionStorage.setItem('selectedVendor', JSON.stringify({
       id: selectedVendor.id,
       name: selectedVendor.name,
-      rating: selectedVendor.vendorProfile?.rating || 4.8,
-      mainLocation: selectedVendor.vendorProfile?.mainLocation || 'Cibiru, Bandung Timur (5 KM)',
-      pricePerLiter: 300,
-      volume: 8000,
-      totalPrice: 2400000
+      rating: vp?.rating || 4.8,
+      mainLocation: vp?.mainLocation || 'Cibiru, Bandung Timur (5 KM)',
+      pricePerLiter: price,
+      volume: cap,
+      totalPrice: total
     }));
     window.location.href = '/buyer/payment';
   };
@@ -126,11 +132,11 @@ export default function BuyerDashboard() {
                 <div className="grid grid-cols-2 border border-slate-150 rounded-xl p-3 bg-slate-50/50 mb-4 text-xs">
                   <div className="border-r border-slate-150 pr-3">
                     <p className="text-slate-400 font-medium mb-0.5">Harga</p>
-                    <p className="font-bold text-primary-600">Rp. 300/L</p>
+                    <p className="font-bold text-primary-600">Rp. {(vendor.vendorProfile?.pricePerLiter || 300).toLocaleString()}/L</p>
                   </div>
                   <div className="pl-3">
                     <p className="text-slate-400 font-medium mb-0.5">Kapasitas</p>
-                    <p className="font-bold text-slate-700">8kL</p>
+                    <p className="font-bold text-slate-700">{((vendor.vendorProfile?.defaultCapacity || 8000) / 1000)}kL</p>
                   </div>
                 </div>
 
@@ -167,14 +173,14 @@ export default function BuyerDashboard() {
               <div className="p-4">
                 <h4 className="font-bold text-slate-800 text-sm mb-1">{selectedVendor.name}</h4>
                 <p className="text-xs text-slate-500 mb-2">{selectedVendor.vendorProfile?.mainLocation || 'Cibiru, Bandung Timur (5 KM)'}</p>
-                <p className="text-sm font-bold text-primary-600">Rp. 300/L</p>
+                <p className="text-sm font-bold text-primary-600">Rp. {(selectedVendor.vendorProfile?.pricePerLiter || 300).toLocaleString()}/L</p>
               </div>
             </div>
 
             {/* Capacities info text matching PDF exactly */}
             <div className="p-4 bg-slate-50 rounded-xl mb-6 border border-slate-100">
               <p className="text-xs text-slate-600 leading-relaxed">
-                Anda akan memesan kapasitas default armada <strong className="text-slate-800">8000 liter</strong>. Estimasi total pembayaran adalah <strong className="text-primary-600">Rp 2.400.000</strong>.
+                Anda akan memesan kapasitas default armada <strong className="text-slate-800">{(selectedVendor.vendorProfile?.defaultCapacity || 8000).toLocaleString()} liter</strong>. Estimasi total pembayaran adalah <strong className="text-primary-600">Rp {((selectedVendor.vendorProfile?.pricePerLiter || 300) * (selectedVendor.vendorProfile?.defaultCapacity || 8000)).toLocaleString()}</strong>.
               </p>
             </div>
 

@@ -104,7 +104,14 @@ export default function BuyerChat() {
     }
   };
 
-  const filteredChats = chats.filter(c => c.user.name.toLowerCase().includes(chatSearch.toLowerCase()));
+  const filteredChats = chats.filter(c => {
+    // Filter by search text
+    const matchesSearch = c.user.name.toLowerCase().includes(chatSearch.toLowerCase());
+    // Filter by active tab
+    if (activeTab === 'VENDOR') return matchesSearch && c.user.role === 'VENDOR';
+    if (activeTab === 'DUKUNGAN') return matchesSearch && c.user.role !== 'VENDOR';
+    return matchesSearch; // SEMUA
+  });
 
   const formatTime = (dateStr: string) => {
     const d = new Date(dateStr);

@@ -61,7 +61,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const register = async (name: string, email: string, password: string, role: string) => {
     await authAPI.register({ name, email, password, role });
-    await login(email, password);
   };
 
   const googleLogin = async (email: string, name: string) => {

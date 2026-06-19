@@ -29,13 +29,23 @@ async function main() {
       addresses: {
         create: [
           {
-            label: 'Gudang Jakarta Pusat',
-            addressLine: 'Jl. Sudirman No. 45, Kavling 3-4, Senayan, Jakarta Pusat, 10210',
+            recipientName: 'Budi Hartanto (Gudang)',
+            province: 'DKI Jakarta',
+            city: 'Jakarta Pusat',
+            district: 'Senayan',
+            postalCode: '10210',
+            street: 'Jl. Sudirman No. 45, Kavling 3-4',
+            details: 'Gudang Utama Senayan',
             isPrimary: true,
           },
           {
-            label: 'Kantor Cabang Bekasi',
-            addressLine: 'Kawasan Industri Jababeka II, Blok C No. 12, Cikarang, Bekasi, 17530',
+            recipientName: 'Budi Hartanto (Cabang)',
+            province: 'Jawa Barat',
+            city: 'Bekasi',
+            district: 'Cikarang',
+            postalCode: '17530',
+            street: 'Kawasan Industri Jababeka II, Blok C No. 12',
+            details: 'Kantor Cabang Bekasi',
             isPrimary: false,
           }
         ]
@@ -134,7 +144,10 @@ async function main() {
       vendorId: vendor1.id,
       truckId: 'TRK-LAG-01',
       driverName: 'John Doe',
-      status: 'AKTIF',
+      truckType: 'Volvo FH16 Clean Water Special',
+      licensePlate: 'D 8821 AB',
+      capacity: 8000,
+      status: 'TERSEDIA',
       lat: -6.920,
       lng: 107.720,
     }
@@ -145,7 +158,10 @@ async function main() {
       vendorId: vendor1.id,
       truckId: 'TRK-LAG-05',
       driverName: 'Mike Ross',
-      status: 'SEDANG JALAN',
+      truckType: 'Hino Ranger 500',
+      licensePlate: 'D 8825 CD',
+      capacity: 8000,
+      status: 'SEDANG_BERTUGAS',
       lat: -6.925,
       lng: 107.725,
     }
@@ -156,7 +172,10 @@ async function main() {
       vendorId: vendor1.id,
       truckId: 'TRK-LAG-09',
       driverName: 'Harvey Specter',
-      status: 'SIAGA',
+      truckType: 'Mitsubishi Fuso Fighter',
+      licensePlate: 'D 8829 EF',
+      capacity: 10000,
+      status: 'TERSEDIA',
       lat: -6.918,
       lng: 107.718,
     }
@@ -168,7 +187,10 @@ async function main() {
       vendorId: vendor2.id,
       truckId: 'TRK-PAP-01',
       driverName: 'Ricky C.',
-      status: 'SEDANG JALAN',
+      truckType: 'Isuzu Giga Max',
+      licensePlate: 'D 9901 GH',
+      capacity: 8000,
+      status: 'SEDANG_BERTUGAS',
       lat: -6.921,
       lng: 107.722,
     }
@@ -179,7 +201,10 @@ async function main() {
       vendorId: vendor2.id,
       truckId: 'TRK-PAP-02',
       driverName: 'Sarah Connor',
-      status: 'SIAGA',
+      truckType: 'Scania P360 Tanker',
+      licensePlate: 'D 9902 IJ',
+      capacity: 8000,
+      status: 'TERSEDIA',
       lat: -6.922,
       lng: 107.723,
     }
@@ -243,6 +268,7 @@ async function main() {
       buyerId: buyer.id,
       vendorId: vendor3.id,
       volume: 5000,
+      pricePerLiter: 450,
       totalPrice: 2250000,
       status: 'SELESAI',
       createdAt: new Date(Date.now() - 3600000 * 24 * 5)
@@ -255,8 +281,9 @@ async function main() {
       buyerId: buyer.id,
       vendorId: vendor1.id,
       volume: 10000,
+      pricePerLiter: 450,
       totalPrice: 4500000,
-      status: 'DIBATALKAN',
+      status: 'DITOLAK',
       createdAt: new Date(Date.now() - 3600000 * 24 * 10)
     }
   });
@@ -267,6 +294,7 @@ async function main() {
       buyerId: buyer.id,
       vendorId: vendor2.id,
       volume: 2500,
+      pricePerLiter: 450,
       totalPrice: 1125000,
       status: 'SELESAI',
       createdAt: new Date(Date.now() - 3600000 * 24 * 15)

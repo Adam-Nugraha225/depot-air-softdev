@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { orderAPI } from '@/lib/api';
 import { Search, Calendar, Filter, FileText, Loader2, ArrowUpRight, Plus, Download, ChevronRight, X } from 'lucide-react';
 import Link from 'next/link';
@@ -24,9 +24,24 @@ export default function BuyerHistory() {
   const [endDate, setEndDate] = useState('');
   const [detailOrder, setDetailOrder] = useState<Order | null>(null);
 
-  // Mock total expenditure for visual completeness matching PDF
-  const totalExpenditure = 'Rp 12.450.000';
-  const expenditureGrowth = '+12.5% dari bulan lalu';
+  // Calculate total expenditure dynamically from actual orders
+  const totalExpenditure = useMemo(() => {
+    const now = new Date();
+    const thisMonth = orders.filter(o => {
+      const d = new Date(o.createdAt);
+      return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+    });
+    const total = thisMonth.reduce((sum, o) => sum + (o.totalPrice || 0), 0);
+    return total;
+  }, [orders]);
+
+  const orderCountThisMonth = useMemo(() => {
+    const now = new Date();
+    return orders.filter(o => {
+      const d = new Date(o.createdAt);
+      return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+    }).length;
+  }, [orders]);
 
   useEffect(() => {
     loadOrders();
@@ -53,11 +68,14 @@ export default function BuyerHistory() {
     switch (status) {
       case 'SELESAI': 
         return 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200';
-      case 'PENDING': 
+      case 'MENUNGGU_KONFIRMASI': 
         return 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200';
-      case 'DIPROSES': 
+      case 'DIKONFIRMASI': 
+      case 'DISIAPKAN':
+        return 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-sky-50 text-sky-700 border border-sky-200';
+      case 'DALAM_PERJALANAN': 
         return 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200';
-      case 'DIBATALKAN': 
+      case 'DITOLAK': 
         return 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-red-50 text-red-700 border border-red-200';
       default: 
         return 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-650';
@@ -120,10 +138,11 @@ export default function BuyerHistory() {
                   onChange={(e) => setStatusFilter(e.target.value)}
                 >
                   <option value="Semua Status">Semua Status</option>
-                  <option value="PENDING">PENDING</option>
-                  <option value="DIPROSES">DIPROSES</option>
+                  <option value="MENUNGGU_KONFIRMASI">MENUNGGU KONFIRMASI</option>
+                  <option value="DIKONFIRMASI">DIKONFIRMASI</option>
+                  <option value="DALAM_PERJALANAN">DALAM PERJALANAN</option>
                   <option value="SELESAI">SELESAI</option>
-                  <option value="DIBATALKAN">DIBATALKAN</option>
+                  <option value="DITOLAK">DITOLAK</option>
                 </select>
               </div>
             </div>
@@ -138,13 +157,13 @@ export default function BuyerHistory() {
         <div className="card p-5 bg-gradient-to-br from-primary-500 to-primary-600 text-white flex flex-col justify-between h-[155px]">
           <div>
             <p className="text-[10px] font-bold text-primary-100 uppercase tracking-wider">Total Pengeluaran Bulan Ini</p>
-            <h2 className="text-2xl font-bold mt-1.5">{totalExpenditure}</h2>
+            <h2 className="text-2xl font-bold mt-1.5">Rp {totalExpenditure.toLocaleString()}</h2>
           </div>
           <div className="flex items-center gap-1.5 text-xs text-primary-100">
             <div className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center text-white">
               <ArrowUpRight className="w-3.5 h-3.5 stroke-[2.5]" />
             </div>
-            <span>{expenditureGrowth}</span>
+            <span>{orderCountThisMonth} transaksi bulan ini</span>
           </div>
         </div>
       </div>
@@ -153,79 +172,144 @@ export default function BuyerHistory() {
       {loading ? (
         <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 text-primary-500 animate-spin" /></div>
       ) : (
-        <div className="table-container shadow-sm border border-slate-150 rounded-2xl overflow-hidden">
-          <table className="w-full text-xs">
-            <thead>
-              <tr className="bg-slate-50 border-b border-slate-100 text-slate-500 font-semibold uppercase tracking-wider text-[10px]">
-                <th className="px-5 py-4 text-left">ID PESANAN</th>
-                <th className="px-5 py-4 text-left">TANGGAL</th>
-                <th className="px-5 py-4 text-left">VENDOR</th>
-                <th className="px-5 py-4 text-left">VOLUME AIR</th>
-                <th className="px-5 py-4 text-left">TOTAL HARGA</th>
-                <th className="px-5 py-4 text-left">STATUS</th>
-                <th className="px-5 py-4 text-left">AKSI</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {orders.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="text-center py-12 text-slate-400 font-medium">
-                    Belum ada riwayat transaksi dengan status ini.
-                  </td>
+        <div className="space-y-4">
+          {/* Desktop View: Transactions Table */}
+          <div className="hidden md:block table-container shadow-sm border border-slate-150 rounded-2xl overflow-hidden">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="bg-slate-50 border-b border-slate-100 text-slate-500 font-semibold uppercase tracking-wider text-[10px]">
+                  <th className="px-5 py-4 text-left">ID PESANAN</th>
+                  <th className="px-5 py-4 text-left">TANGGAL</th>
+                  <th className="px-5 py-4 text-left">VENDOR</th>
+                  <th className="px-5 py-4 text-left">VOLUME AIR</th>
+                  <th className="px-5 py-4 text-left">TOTAL HARGA</th>
+                  <th className="px-5 py-4 text-left">STATUS</th>
+                  <th className="px-5 py-4 text-left">AKSI</th>
                 </tr>
-              ) : (
-                orders.map((order, i) => (
-                  <tr key={order.id} className="hover:bg-slate-50/50 transition-colors">
-                    <td className="px-5 py-4">
-                      <button 
-                        onClick={() => setDetailOrder(order)} 
-                        className="font-bold text-primary-600 hover:underline hover:text-primary-700"
-                      >
-                        {order.orderNumber}
-                      </button>
-                    </td>
-                    <td className="px-5 py-4 text-slate-500">
-                      {new Date(order.createdAt).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}, {new Date(order.createdAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
-                    </td>
-                    <td className="px-5 py-4 font-semibold text-slate-700">
-                      {order.vendor.name}
-                    </td>
-                    <td className="px-5 py-4 text-slate-600">
-                      {order.volume.toLocaleString()} L
-                    </td>
-                    <td className="px-5 py-4 font-bold text-slate-800">
-                      Rp {order.totalPrice.toLocaleString()}
-                    </td>
-                    <td className="px-5 py-4">
-                      <span className={statusBadge(order.status)}>{order.status}</span>
-                    </td>
-                    <td className="px-5 py-4">
-                      {order.status === 'SELESAI' ? (
-                        <button 
-                          onClick={() => setDetailOrder(order)} 
-                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 font-bold hover:bg-slate-50 transition-all text-[11px]"
-                        >
-                          <FileText className="w-3.5 h-3.5 text-slate-400" /> Unduh Invoice
-                        </button>
-                      ) : (
-                        <button 
-                          onClick={() => setDetailOrder(order)} 
-                          className="flex items-center gap-1 px-3 py-1.5 text-slate-500 hover:text-slate-700 font-bold text-[11px] transition-all"
-                        >
-                          Detail
-                        </button>
-                      )}
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {orders.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="text-center py-12 text-slate-400 font-medium">
+                      Belum ada riwayat transaksi dengan status ini.
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                ) : (
+                  orders.map((order) => (
+                    <tr key={order.id} className="hover:bg-slate-50/50 transition-colors">
+                      <td className="px-5 py-4">
+                        <button 
+                          onClick={() => setDetailOrder(order)} 
+                          className="font-bold text-primary-600 hover:underline hover:text-primary-700"
+                        >
+                          {order.orderNumber}
+                        </button>
+                      </td>
+                      <td className="px-5 py-4 text-slate-500">
+                        {new Date(order.createdAt).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}, {new Date(order.createdAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
+                      </td>
+                      <td className="px-5 py-4 font-semibold text-slate-700">
+                        {order.vendor.name}
+                      </td>
+                      <td className="px-5 py-4 text-slate-650">
+                        {order.volume.toLocaleString()} L
+                      </td>
+                      <td className="px-5 py-4 font-bold text-slate-800">
+                        Rp {order.totalPrice.toLocaleString()}
+                      </td>
+                      <td className="px-5 py-4">
+                        <span className={statusBadge(order.status)}>{order.status}</span>
+                      </td>
+                      <td className="px-5 py-4">
+                        {order.status === 'SELESAI' ? (
+                          <button 
+                            onClick={() => setDetailOrder(order)} 
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 font-bold hover:bg-slate-50 transition-all text-[11px]"
+                          >
+                            <FileText className="w-3.5 h-3.5 text-slate-400" /> Unduh Invoice
+                          </button>
+                        ) : (
+                          <button 
+                            onClick={() => setDetailOrder(order)} 
+                            className="flex items-center gap-1 px-3 py-1.5 text-slate-500 hover:text-slate-700 font-bold text-[11px] transition-all"
+                          >
+                            Detail
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
 
-          {/* Table Footer Pagination matching PDF exactly */}
+          {/* Mobile View: Transaction Cards */}
+          <div className="md:hidden space-y-4">
+            {orders.length === 0 ? (
+              <div className="card p-8 text-center text-slate-400 font-medium">
+                Belum ada riwayat transaksi dengan status ini.
+              </div>
+            ) : (
+              orders.map((order, i) => (
+                <div key={order.id} className="card p-4 space-y-3 animate-slide-up" style={{ animationDelay: `${i * 50}ms` }}>
+                  <div className="flex items-center justify-between">
+                    <button 
+                      onClick={() => setDetailOrder(order)} 
+                      className="font-bold text-primary-600 hover:underline text-sm"
+                    >
+                      {order.orderNumber}
+                    </button>
+                    <span className={statusBadge(order.status)}>{order.status}</span>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-y-3 gap-x-2 text-xs border-y border-slate-100 py-3">
+                    <div>
+                      <p className="text-slate-400 font-semibold text-[10px] uppercase">Vendor</p>
+                      <p className="font-bold text-slate-750 mt-0.5">{order.vendor.name}</p>
+                    </div>
+                    <div>
+                      <p className="text-slate-400 font-semibold text-[10px] uppercase">Volume Air</p>
+                      <p className="font-bold text-slate-700 mt-0.5">{order.volume.toLocaleString()} L</p>
+                    </div>
+                    <div>
+                      <p className="text-slate-400 font-semibold text-[10px] uppercase">Total Harga</p>
+                      <p className="font-bold text-slate-800 mt-0.5">Rp {order.totalPrice.toLocaleString()}</p>
+                    </div>
+                    <div>
+                      <p className="text-slate-400 font-semibold text-[10px] uppercase">Tanggal</p>
+                      <p className="text-slate-500 mt-0.5">
+                        {new Date(order.createdAt).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: '2-digit' })}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end pt-1">
+                    {order.status === 'SELESAI' ? (
+                      <button 
+                        onClick={() => setDetailOrder(order)} 
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 font-bold text-[11px] hover:bg-slate-50 transition-all"
+                      >
+                        <FileText className="w-3.5 h-3.5 text-slate-400" /> Invoice
+                      </button>
+                    ) : (
+                      <button 
+                        onClick={() => setDetailOrder(order)} 
+                        className="px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-150 text-slate-600 font-bold text-[11px] hover:bg-slate-100 transition-all"
+                      >
+                        Detail
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+
+          {/* Table Footer Pagination matching PDF exactly (Responsive) */}
           {orders.length > 0 && (
-            <div className="bg-slate-50 px-5 py-4 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
-              <span>Menampilkan 1-{orders.length} dari {orders.length} transaksi</span>
+            <div className="card px-5 py-4 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
+              <span className="text-center sm:text-left">Menampilkan 1-{orders.length} dari {orders.length} transaksi</span>
               <div className="flex items-center gap-1">
                 <button className="px-2 py-1 rounded border border-slate-200 bg-white text-slate-400 cursor-not-allowed hover:bg-slate-50">&lt;</button>
                 <button className="px-3 py-1 rounded bg-primary-600 text-white font-bold">1</button>

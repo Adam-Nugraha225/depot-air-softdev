@@ -79,7 +79,10 @@ exports.addAddress = async (req, res, next) => {
 exports.updateAddress = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { label, addressLine, isPrimary } = req.body;
+    const { 
+      recipientName, province, city, district, 
+      postalCode, street, details, isPrimary 
+    } = req.body;
 
     const existingAddress = await prisma.address.findUnique({
       where: { id }
@@ -98,8 +101,13 @@ exports.updateAddress = async (req, res, next) => {
     const address = await prisma.address.update({
       where: { id },
       data: {
-        label,
-        addressLine,
+        recipientName,
+        province,
+        city,
+        district,
+        postalCode,
+        street,
+        details,
         isPrimary: isPrimary || false
       }
     });

@@ -43,10 +43,14 @@ export default function BuyerPayment() {
     if (!vendorData) return;
     setPaying(true);
     try {
+      const paymentMethodLabel = paymentMethod === 'BANK_TRANSFER' ? 'Transfer Bank' :
+                                   paymentMethod === 'COD' ? 'Cash On Delivery (COD)' :
+                                   `Virtual Account ${selectedBank}`;
       const res = await orderAPI.createOrder({
         vendorId: vendorData.id,
         volume: vendorData.volume,
-        totalPrice: vendorData.totalPrice,
+        paymentMethod: paymentMethodLabel,
+        serviceFee: 0,
       });
       
       const createdOrder = res.data.data;

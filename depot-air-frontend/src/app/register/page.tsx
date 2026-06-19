@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/components/ui/Toast';
 import { Droplets, Mail, Lock, Eye, EyeOff, User, ArrowRight, Loader2, ShieldCheck, Truck, ShoppingCart } from 'lucide-react';
@@ -18,6 +19,7 @@ export default function RegisterPage() {
   const [isLoading, setIsLoading] = useState(false);
   const { register } = useAuth();
   const { showToast } = useToast();
+  const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,7 +37,10 @@ export default function RegisterPage() {
     setIsLoading(true);
     try {
       await register(name, email, password, role);
-      showToast('Registrasi berhasil! Mengarahkan ke dashboard...', 'success');
+      showToast('Registrasi berhasil! Silakan masuk dengan akun Anda.', 'success');
+      setTimeout(() => {
+        router.push('/login');
+      }, 1500);
     } catch (err: any) {
       const msg = err.response?.data?.message || 'Registrasi gagal. Silakan coba lagi.';
       setError(msg);

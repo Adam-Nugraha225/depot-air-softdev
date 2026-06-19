@@ -39,7 +39,7 @@ export default function SellerTracking() {
         orderAPI.getOrders()
       ]);
       setFleets(fleetsRes.data.data);
-      setActiveOrders(ordersRes.data.data.filter((o: Order) => o.status === 'DIPROSES'));
+      setActiveOrders(ordersRes.data.data.filter((o: Order) => o.status === 'DALAM_PERJALANAN' || o.status === 'DIKONFIRMASI'));
     } catch { } finally {
       setLoading(false);
     }

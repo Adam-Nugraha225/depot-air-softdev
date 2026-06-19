@@ -168,27 +168,6 @@ export default function LoginPage() {
             </svg>
             Login with Google
           </button>
-
-          {/* Demo Quick Access */}
-          <div className="mt-6 p-4 bg-white rounded-xl border border-slate-100 shadow-sm">
-            <p className="text-[11px] font-bold text-slate-500 mb-2 uppercase tracking-wider">🚀 Demo Quick Access</p>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => { setEmail('buyer@example.com'); setPassword('password123'); }}
-                className="flex-1 text-xs px-3 py-2 bg-slate-50 rounded-lg text-primary-600 font-semibold hover:bg-primary-50 transition-colors border border-slate-100"
-              >
-                Buyer
-              </button>
-              <button
-                type="button"
-                onClick={() => { setEmail('vendor1@example.com'); setPassword('password123'); }}
-                className="flex-1 text-xs px-3 py-2 bg-slate-50 rounded-lg text-primary-600 font-semibold hover:bg-primary-50 transition-colors border border-slate-100"
-              >
-                Seller
-              </button>
-            </div>
-          </div>
         </div>
       </div>
     </div>

@@ -46,7 +46,7 @@ export default function SellerDashboard() {
       const [analyticsRes, fleetsRes, ordersRes] = await Promise.all([
         analyticsAPI.getDashboardAnalytics(),
         fleetAPI.getFleets(),
-        orderAPI.getOrders({ status: 'PENDING' })
+        orderAPI.getOrders({ status: 'MENUNGGU_KONFIRMASI' })
       ]);
       setAnalytics(analyticsRes.data.data);
       setFleets(fleetsRes.data.data);
@@ -58,9 +58,9 @@ export default function SellerDashboard() {
 
   const fleetStatusColor = (status: string) => {
     switch (status) {
-      case 'AKTIF': return 'bg-emerald-50 text-emerald-700 border-emerald-100';
-      case 'SEDANG JALAN': return 'bg-blue-50 text-blue-700 border-blue-100';
-      case 'SIAGA': return 'bg-slate-50 text-slate-600 border-slate-100';
+      case 'TERSEDIA': return 'bg-emerald-50 text-emerald-700 border-emerald-100';
+      case 'SEDANG_BERTUGAS': return 'bg-blue-50 text-blue-700 border-blue-100';
+      case 'PEMELIHARAAN': return 'bg-amber-50 text-amber-700 border-amber-100';
       default: return 'bg-slate-50 text-slate-600';
     }
   };

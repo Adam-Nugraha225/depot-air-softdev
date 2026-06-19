@@ -9,6 +9,9 @@ interface Fleet {
   id: string;
   truckId: string;
   driverName: string;
+  truckType?: string;
+  licensePlate?: string;
+  capacity?: number;
   status: string;
   lat?: number;
   lng?: number;
@@ -52,10 +55,10 @@ export default function SellerFleet() {
     try {
       const [fleetsRes, ordersRes] = await Promise.all([
         fleetAPI.getFleets(),
-        orderAPI.getOrders({ status: 'DIPROSES' })
+        orderAPI.getOrders({ status: 'DIKONFIRMASI' })
       ]);
       setFleets(fleetsRes.data.data);
-      setOrders(ordersRes.data.data.filter((o: Order) => o.status === 'DIPROSES'));
+      setOrders(ordersRes.data.data.filter((o: Order) => o.status === 'DIKONFIRMASI'));
     } catch { } finally {
       setLoading(false);
     }
@@ -65,13 +68,13 @@ export default function SellerFleet() {
     e.preventDefault();
     setSaving(true);
     
-    // Combine driver and plate details into the database schema
-    const combinedDriver = `${formDriverName} (${vehicleModel || 'Volvo FH16'} - ${plateNumber || 'B 1234 CD'})`;
-    
     try {
       await fleetAPI.addFleet({ 
         truckId: formTruckId, 
-        driverName: combinedDriver 
+        driverName: formDriverName,
+        truckType: vehicleModel || undefined,
+        licensePlate: plateNumber || undefined,
+        capacity: capacityLiters ? parseInt(capacityLiters) : undefined,
       });
       await loadData();
       setShowAddModal(false);
@@ -79,6 +82,7 @@ export default function SellerFleet() {
       setFormDriverName('');
       setVehicleModel('');
       setPlateNumber('');
+      setCapacityLiters('15000');
       showToast('Kendaraan baru berhasil ditambahkan!', 'success');
     } catch {
       showToast('Gagal menambahkan kendaraan. Coba lagi.', 'error');
@@ -92,8 +96,6 @@ export default function SellerFleet() {
     setSaving(true);
     try {
       await fleetAPI.assignFleetToOrder({ orderId: selectedOrderId, fleetId: selectedFleetId });
-      // Update fleet status to 'SEDANG JALAN' automatically
-      await fleetAPI.updateFleetStatus(selectedFleetId, { status: 'SEDANG JALAN' });
       await loadData();
       setShowAssignModal(false);
       showToast('Armada berhasil ditugaskan ke pesanan!', 'success');
@@ -108,7 +110,7 @@ export default function SellerFleet() {
     try {
       await fleetAPI.updateFleetStatus(fleetId, { status });
       await loadData();
-      const msg = status === 'AKTIF' ? 'Armada berhasil diaktifkan!' : `Status armada diperbarui ke ${status}.`;
+      const msg = status === 'TERSEDIA' ? 'Armada berhasil diaktifkan!' : `Status armada diperbarui ke ${status}.`;
       showToast(msg, 'success');
     } catch {
       showToast('Gagal memperbarui status armada. Coba lagi.', 'error');
@@ -117,14 +119,14 @@ export default function SellerFleet() {
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'AKTIF': 
+      case 'TERSEDIA': 
         return 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-250';
-      case 'SEDANG JALAN': 
+      case 'SEDANG_BERTUGAS': 
         return 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-blue-50 text-blue-700 border border-blue-250';
-      case 'SIAGA': 
-        return 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-650 border border-slate-200';
+      case 'PEMELIHARAAN': 
+        return 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-250';
       default: 
-        return 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200';
+        return 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-650 border border-slate-200';
     }
   };
 
@@ -132,14 +134,12 @@ export default function SellerFleet() {
     return <div className="flex justify-center py-20"><Loader2 className="w-8 h-8 text-primary-500 animate-spin" /></div>;
   }
 
-  // Split vehicle & driver details for clean layout
+  // Extract vehicle & driver details from fleet fields
   const parseFleetDetails = (fleet: Fleet) => {
-    const parts = fleet.driverName.split('(');
-    const driver = parts[0].trim();
-    let modelPlate = 'Volvo FH16, Plat: B 1234 CD';
-    if (parts.length > 1) {
-      modelPlate = parts[1].replace(')', '').replace('-', ', Plat: ').trim();
-    }
+    const driver = fleet.driverName;
+    const model = fleet.truckType || 'Volvo FH16';
+    const plate = fleet.licensePlate || 'B 1234 CD';
+    const modelPlate = `${model}, Plat: ${plate}`;
     return { driver, modelPlate };
   };
 
@@ -157,7 +157,7 @@ export default function SellerFleet() {
       </div>
 
       {/* Three Summary Blocks at top */}
-      <div className="grid grid-cols-3 gap-5">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
         <div className="card p-4 flex items-center justify-between border border-slate-100 bg-white">
           <div className="space-y-1">
             <h4 className="text-2xl font-bold text-slate-800">8</h4>
@@ -210,107 +210,186 @@ export default function SellerFleet() {
             onChange={(e) => setStatusFilter(e.target.value)}
           >
             <option value="Semua Status">Semua Status</option>
-            <option value="AKTIF">Tersedia</option>
-            <option value="SEDANG JALAN">Sedang Bertugas</option>
-            <option value="SIAGA">Pemeliharaan</option>
+            <option value="TERSEDIA">Tersedia</option>
+            <option value="SEDANG_BERTUGAS">Sedang Bertugas</option>
+            <option value="PEMELIHARAAN">Pemeliharaan</option>
           </select>
           <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
         </div>
       </div>
 
-      {/* Fleets Desktop Table */}
-      <div className="table-container shadow-sm border border-slate-150 rounded-2xl overflow-hidden">
-        <table className="w-full text-xs">
-          <thead>
-            <tr className="bg-slate-50 border-b border-slate-100 text-slate-500 font-semibold uppercase tracking-wider text-[10px]">
-              <th className="px-5 py-4 text-left">ID TRUK</th>
-              <th className="px-5 py-4 text-left">DETAIL TRUK</th>
-              <th className="px-5 py-4 text-left">KAPASITAS</th>
-              <th className="px-5 py-4 text-left">STATUS</th>
-              <th className="px-5 py-4 text-left">PENUGASAN SAAT INI</th>
-              <th className="px-5 py-4 text-left">AKSI</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100 bg-white">
-            {fleets.length === 0 ? (
-              <tr>
-                <td colSpan={6} className="text-center py-12 text-slate-400 font-semibold">
-                  Belum ada armada terdaftar.
-                </td>
+      <div className="space-y-4">
+        {/* Fleets Desktop Table */}
+        <div className="hidden md:block table-container shadow-sm border border-slate-150 rounded-2xl overflow-hidden">
+          <table className="w-full text-xs">
+            <thead>
+              <tr className="bg-slate-50 border-b border-slate-100 text-slate-500 font-semibold uppercase tracking-wider text-[10px]">
+                <th className="px-5 py-4 text-left">ID TRUK</th>
+                <th className="px-5 py-4 text-left">DETAIL TRUK</th>
+                <th className="px-5 py-4 text-left">KAPASITAS</th>
+                <th className="px-5 py-4 text-left">STATUS</th>
+                <th className="px-5 py-4 text-left">PENUGASAN SAAT INI</th>
+                <th className="px-5 py-4 text-left">AKSI</th>
               </tr>
-            ) : (
-              fleets.map((fleet, i) => {
-                const { driver, modelPlate } = parseFleetDetails(fleet);
-                const status = fleet.status === 'AKTIF' ? 'Tersedia' : 
-                               fleet.status === 'SEDANG JALAN' ? 'Sedang Bertugas' : 'Pemeliharaan';
+            </thead>
+            <tbody className="divide-y divide-slate-100 bg-white">
+              {fleets.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="text-center py-12 text-slate-400 font-semibold">
+                    Belum ada armada terdaftar.
+                  </td>
+                </tr>
+              ) : (
+                fleets.map((fleet) => {
+                  const { driver, modelPlate } = parseFleetDetails(fleet);
+                  const status = fleet.status === 'TERSEDIA' ? 'Tersedia' : 
+                                 fleet.status === 'SEDANG_BERTUGAS' ? 'Sedang Bertugas' : 'Pemeliharaan';
 
-                return (
-                  <tr key={fleet.id} className="hover:bg-slate-50/50 transition-colors">
-                    <td className="px-5 py-4 font-bold text-primary-600">
-                      #{fleet.truckId}
-                    </td>
-                    <td className="px-5 py-4">
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center text-slate-400">
-                          <Truck className="w-4 h-4" />
+                  return (
+                    <tr key={fleet.id} className="hover:bg-slate-50/50 transition-colors">
+                      <td className="px-5 py-4 font-bold text-primary-600">
+                        #{fleet.truckId}
+                      </td>
+                      <td className="px-5 py-4">
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center text-slate-400">
+                            <Truck className="w-4 h-4" />
+                          </div>
+                          <div>
+                            <p className="font-bold text-slate-800">{modelPlate.split(',')[0]}</p>
+                            <p className="text-[10px] text-slate-400 mt-0.5">{modelPlate.split(',')[1]?.trim() || 'Plat: B 1234 CD'}</p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="font-bold text-slate-800">{modelPlate.split(',')[0]}</p>
-                          <p className="text-[10px] text-slate-400 mt-0.5">{modelPlate.split(',')[1]?.trim() || 'Plat: B 1234 CD'}</p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-5 py-4 font-semibold text-slate-700">
-                      15.000 L
-                    </td>
-                    <td className="px-5 py-4">
-                      <span className={getStatusBadge(fleet.status)}>{status}</span>
-                    </td>
-                    <td className="px-5 py-4 text-slate-600">
-                      {fleet.status === 'SEDANG JALAN' ? (
-                        <div className="space-y-0.5">
-                          <p className="font-bold text-slate-800">ORD-9921</p>
-                          <p className="text-[10px] text-slate-400">Tujuan: Lagos City Marina</p>
-                        </div>
-                      ) : (
-                        <span className="text-slate-400 italic">Belum Ditugaskan</span>
-                      )}
-                    </td>
-                    <td className="px-5 py-4">
-                      {fleet.status === 'AKTIF' ? (
-                        <button 
-                          onClick={() => { setSelectedFleetId(fleet.id); setShowAssignModal(true); }}
-                          className="px-3.5 py-2 rounded-lg bg-primary-600 hover:bg-primary-700 text-white font-bold text-[10px] shadow-sm transition-all"
-                        >
-                          Tugaskan Armada
-                        </button>
-                      ) : fleet.status === 'SEDANG JALAN' ? (
-                        <button 
-                          onClick={() => handleStatusUpdate(fleet.id, 'AKTIF')}
-                          className="px-3.5 py-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-bold text-[10px] shadow-sm transition-all"
-                        >
-                          Selesaikan Tugas
-                        </button>
-                      ) : (
-                        <button 
-                          onClick={() => handleStatusUpdate(fleet.id, 'AKTIF')}
-                          className="text-primary-600 hover:text-primary-700 font-bold text-[10px]"
-                        >
-                          Aktifkan
-                        </button>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })
-            )}
-          </tbody>
-        </table>
+                      </td>
+                      <td className="px-5 py-4 font-semibold text-slate-700">
+                        {fleet.capacity ? `${fleet.capacity.toLocaleString()} L` : '15.000 L'}
+                      </td>
+                      <td className="px-5 py-4">
+                        <span className={getStatusBadge(fleet.status)}>{status}</span>
+                      </td>
+                      <td className="px-5 py-4 text-slate-650">
+                        {fleet.status === 'SEDANG_BERTUGAS' ? (
+                          <div className="space-y-0.5">
+                            <p className="font-bold text-slate-850">Aktif Pengiriman</p>
+                            <p className="text-[10px] text-slate-400">Truk sedang bertugas mengantar air</p>
+                          </div>
+                        ) : (
+                          <span className="text-slate-400 italic">Belum Ditugaskan</span>
+                        )}
+                      </td>
+                      <td className="px-5 py-4">
+                        {fleet.status === 'TERSEDIA' ? (
+                          <button 
+                            onClick={() => { setSelectedFleetId(fleet.id); setShowAssignModal(true); }}
+                            className="px-3.5 py-2 rounded-lg bg-primary-600 hover:bg-primary-700 text-white font-bold text-[10px] shadow-sm transition-all"
+                          >
+                            Tugaskan Armada
+                          </button>
+                        ) : fleet.status === 'SEDANG_BERTUGAS' ? (
+                          <button 
+                            onClick={() => handleStatusUpdate(fleet.id, 'TERSEDIA')}
+                            className="px-3.5 py-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-bold text-[10px] shadow-sm transition-all"
+                          >
+                            Selesaikan Tugas
+                          </button>
+                        ) : (
+                          <button 
+                            onClick={() => handleStatusUpdate(fleet.id, 'TERSEDIA')}
+                            className="text-primary-600 hover:text-primary-700 font-bold text-[10px]"
+                          >
+                            Aktifkan
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
 
-        {/* Footer info pagination matching PDF */}
+        {/* Mobile View: Fleet Cards */}
+        <div className="md:hidden space-y-4">
+          {fleets.length === 0 ? (
+            <div className="card p-8 text-center text-slate-400 font-semibold">
+              Belum ada armada terdaftar.
+            </div>
+          ) : (
+            fleets.map((fleet, i) => {
+              const { driver, modelPlate } = parseFleetDetails(fleet);
+              const status = fleet.status === 'TERSEDIA' ? 'Tersedia' : 
+                             fleet.status === 'SEDANG_BERTUGAS' ? 'Sedang Bertugas' : 'Pemeliharaan';
+
+              return (
+                <div key={fleet.id} className="card p-4 space-y-3 animate-slide-up" style={{ animationDelay: `${i * 50}ms` }}>
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-primary-600">#{fleet.truckId}</span>
+                    <span className={getStatusBadge(fleet.status)}>{status}</span>
+                  </div>
+                  
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center text-slate-450 flex-shrink-0">
+                      <Truck className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <p className="font-bold text-slate-800">{modelPlate.split(',')[0]}</p>
+                      <p className="text-[10px] text-slate-405 mt-0.5">{modelPlate.split(',')[1]?.trim() || 'Plat: B 1234 CD'}</p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-y-2 gap-x-2 text-xs border-t border-slate-100 pt-3">
+                    <div>
+                      <p className="text-slate-400 font-semibold text-[10px] uppercase">Kapasitas</p>
+                      <p className="font-bold text-slate-700 mt-0.5">{fleet.capacity ? `${fleet.capacity.toLocaleString()} L` : '15.000 L'}</p>
+                    </div>
+                    <div>
+                      <p className="text-slate-400 font-semibold text-[10px] uppercase">Driver</p>
+                      <p className="font-bold text-slate-700 mt-0.5">{driver || '-'}</p>
+                    </div>
+                  </div>
+
+                  {fleet.status === 'SEDANG_BERTUGAS' && (
+                    <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-100 text-[10px] text-slate-500">
+                      <p className="font-bold text-slate-700">Aktif Pengiriman</p>
+                      <p className="mt-0.5">Truk sedang bertugas mengantar air</p>
+                    </div>
+                  )}
+
+                  <div className="border-t border-slate-100 pt-3 flex justify-end">
+                    {fleet.status === 'TERSEDIA' ? (
+                      <button 
+                        onClick={() => { setSelectedFleetId(fleet.id); setShowAssignModal(true); }}
+                        className="px-3.5 py-2 rounded-lg bg-primary-600 hover:bg-primary-700 text-white font-bold text-[10px] shadow-sm transition-all"
+                      >
+                        Tugaskan Armada
+                      </button>
+                    ) : fleet.status === 'SEDANG_BERTUGAS' ? (
+                      <button 
+                        onClick={() => handleStatusUpdate(fleet.id, 'TERSEDIA')}
+                        className="px-3.5 py-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-bold text-[10px] shadow-sm transition-all"
+                      >
+                        Selesaikan Tugas
+                      </button>
+                    ) : (
+                      <button 
+                        onClick={() => handleStatusUpdate(fleet.id, 'TERSEDIA')}
+                        className="px-3.5 py-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-primary-600 font-bold text-[10px] shadow-sm transition-all"
+                      >
+                        Aktifkan
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+
+        {/* Footer info pagination matching PDF (Responsive) */}
         {fleets.length > 0 && (
-          <div className="bg-slate-50 px-5 py-4 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
-            <span>Menampilkan 1 hingga {fleets.length} dari {fleets.length} data</span>
+          <div className="card px-5 py-4 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
+            <span className="text-center sm:text-left">Menampilkan 1 hingga {fleets.length} dari {fleets.length} data</span>
             <div className="flex items-center gap-1">
               <button className="px-2 py-1 rounded border border-slate-200 bg-white text-slate-400 cursor-not-allowed hover:bg-slate-50">&lt;</button>
               <button className="px-3 py-1 rounded bg-primary-600 text-white font-bold">1</button>

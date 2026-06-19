@@ -36,7 +36,7 @@ export default function BuyerTracking() {
       const allOrders = res.data.data;
       setOrders(allOrders);
       // Look for first non-completed, non-cancelled order
-      const active = allOrders.find((o: Order) => o.status !== 'SELESAI' && o.status !== 'DIBATALKAN');
+      const active = allOrders.find((o: Order) => o.status !== 'SELESAI' && o.status !== 'DITOLAK');
       if (active) {
         setSelectedOrder(active);
       } else if (allOrders.length > 0) {
@@ -78,10 +78,10 @@ export default function BuyerTracking() {
     }
   };
 
-  const stepIndex = order.status === 'PENDING' ? 0 : 
-                      order.status === 'DIPROSES' ? 1 : 
-                      order.status === 'DIKIRIM' ? 2 : 
-                      order.status === 'SELESAI' ? 3 : 2;
+  const stepIndex = order.status === 'MENUNGGU_KONFIRMASI' ? 0 : 
+                    (order.status === 'DIKONFIRMASI' || order.status === 'DISIAPKAN') ? 1 : 
+                    order.status === 'DALAM_PERJALANAN' ? 2 : 
+                    order.status === 'SELESAI' ? 3 : 1;
 
   return (
     <div className="space-y-6 animate-fade-in relative">
@@ -132,9 +132,9 @@ export default function BuyerTracking() {
           {/* Stepper Timeline (Horizontal on md, stack vertical on mobile) */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 relative py-2">
             {[
-              { label: 'Pesanan Diproses', time: '08:30 WIB' },
-              { label: 'Dalam Perjalanan', time: '10:15 WIB' },
-              { label: 'Kurir Hampir Sampai', time: 'Estimasi 14:15' },
+              { label: 'Pesanan Diterima', time: '08:30 WIB' },
+              { label: 'Diproses & Disiapkan', time: '10:15 WIB' },
+              { label: 'Dalam Perjalanan', time: 'Estimasi 14:15' },
               { label: 'Sampai di Lokasi', time: 'Segera' },
             ].map((step, index) => {
               const isActive = index <= stepIndex;
