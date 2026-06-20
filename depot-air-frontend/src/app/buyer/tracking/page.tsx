@@ -266,7 +266,7 @@ export default function BuyerTracking() {
             </div>
             <div className="flex gap-2">
               <Link
-                href="/buyer/chat"
+                href={`/buyer/chat?vendorId=${order.vendor.id}&vendorName=${encodeURIComponent(order.vendor.name)}`}
                 className="flex-1 py-2 rounded-xl bg-slate-50 hover:bg-slate-100 text-primary-600 font-bold text-xs border border-slate-200/60 transition-all text-center flex items-center justify-center gap-1.5"
               >
                 <MessageSquare className="w-3.5 h-3.5" /> Chat

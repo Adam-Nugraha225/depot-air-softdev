@@ -102,7 +102,7 @@ exports.getOrders = async (req, res, next) => {
             }
           } 
         },
-        buyer: { select: { name: true, phone: true } },
+        buyer: { select: { id: true, name: true, phone: true } },
         assignedFleet: {
           select: {
             id: true,
@@ -134,6 +134,7 @@ exports.getOrderById = async (req, res, next) => {
       include: {
         vendor: { 
           select: { 
+            id: true,
             name: true, 
             phone: true,
             vendorProfile: {
@@ -143,7 +144,7 @@ exports.getOrderById = async (req, res, next) => {
             }
           } 
         },
-        buyer: { select: { name: true, phone: true } },
+        buyer: { select: { id: true, name: true, phone: true } },
         assignedFleet: true
       }
     });
