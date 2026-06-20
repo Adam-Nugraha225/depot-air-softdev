@@ -2,6 +2,9 @@
 
 > Platform *marketplace* distribusi air yang menghubungkan **Vendor (Distributor Air)** dengan **Pembeli (Buyer)** secara digital, transparan, dan efisien dalam satu sistem terintegrasi.
 
+🌍 **Live API URL:** `https://depot-air-backend.vercel.app`
+📚 **Status:** Production Ready (Vercel Serverless + Supabase PostgreSQL)
+
 ---
 
 ## 👥 Tim Pengembang
@@ -208,25 +211,25 @@ Buka `http://localhost:5555` di browser.
 
 ---
 
-## ☁️ Deployment
+## ☁️ Deployment (Production)
 
-### Backend — Railway / Render
+Proyek ini telah di-*deploy* menggunakan arsitektur modern (Serverless & Cloud Database) untuk menjamin skalabilitas dan ketersediaan tinggi secara gratis (0 biaya operasional).
 
-1. Buat database **PostgreSQL gratis** di [Neon.tech](https://neon.tech) atau [Supabase](https://supabase.com)
-2. Ubah `prisma/schema.prisma`:
-   ```prisma
-   datasource db {
-     provider = "postgresql"
-     url      = env("DATABASE_URL")
-   }
-   ```
-3. Set Environment Variables di Railway/Render:
-   ```
-   DATABASE_URL = postgresql://...
-   JWT_SECRET   = your-secret-key
-   PORT         = 8080
-   ```
-4. Deploy & jalankan build command: `npx prisma db push && node src/index.js`
+### Backend API — Vercel Serverless
+Backend Express.js dikonversi menjadi *Serverless Function* dan di-deploy ke **Vercel**.
+- **Live URL:** `https://depot-air-backend.vercel.app`
+- Keunggulan: *Auto-scaling*, *zero-maintenance*, dan sangat cepat karena *edge routing*.
+
+### Database — Supabase (PostgreSQL)
+Migrasi dari SQLite lokal ke cloud PostgreSQL menggunakan **Supabase**.
+- Digunakan fitur *Connection Pooling* (pgbouncer) untuk menangani ratusan koneksi secara efisien dalam arsitektur Serverless.
+- Tersinkronisasi penuh dengan Prisma ORM.
+
+### Cara Re-Deploy Backend
+Jika ada perubahan kode di branch `devBackend-v2`, Vercel akan otomatis melakukan *build*. Namun jika ingin mem-*push* manual:
+1. Pastikan perubahan sudah di-commit (`git commit -m "update"`)
+2. `git push origin devBackend-v2`
+3. Masuk ke dashboard Vercel, klik *Promote to Production* jika berada di branch non-main.
 
 ### Frontend — Vercel
 - Hubungkan GitHub repo ke Vercel
