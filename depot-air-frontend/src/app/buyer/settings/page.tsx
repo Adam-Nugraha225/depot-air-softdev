@@ -176,7 +176,7 @@ export default function BuyerSettings() {
 
             <div>
               <label className="text-xs font-bold text-slate-500 mb-1.5 block">Email</label>
-              <input type="email" className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-xs text-slate-400 cursor-not-allowed focus:outline-none" value={user?.email || 'budi.hartanto@email.com'} disabled />
+              <input type="email" className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-xs text-slate-400 cursor-not-allowed focus:outline-none" value={user?.email || ''} disabled />
             </div>
 
             <div>
@@ -186,7 +186,7 @@ export default function BuyerSettings() {
 
             <div>
               <label className="text-xs font-bold text-slate-500 mb-1.5 block">ID Pengguna</label>
-              <input type="text" className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-xs text-slate-400 cursor-not-allowed focus:outline-none" value={user?.role === 'VENDOR' ? 'VH-SELLER-2024' : 'VH-BUDI-2024'} disabled />
+              <input type="text" className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-xs text-slate-400 cursor-not-allowed focus:outline-none" value={user?.id || ''} disabled />
             </div>
 
             <div className="sm:col-span-2 mt-2">

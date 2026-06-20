@@ -14,6 +14,9 @@ interface Order {
   createdAt: string;
   buyer: { name: string; phone?: string };
   assignedFleet?: { truckId: string; driverName: string };
+  waterType?: string;
+  deliverySchedule?: string;
+  deliveryNotes?: string;
 }
 
 export default function SellerOrders() {
@@ -117,16 +120,17 @@ export default function SellerOrders() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
           {filteredOrders.map((order, i) => {
-            // Mock dynamic details matching PDF Page 11 cards
-            const timeLimit = i === 0 ? '14m tersisa' : i === 1 ? '1j 45m tersisa' : '1j 52m tersisa';
-            const limitColor = i === 0 ? 'bg-red-50 text-red-700 border-red-100' : 'bg-slate-100 text-slate-550 border-slate-150';
-            
-            const schedule = i === 0 ? 'Hari ini, 14:00 - 16:00' : 'Besok, 08:00 - 10:00';
-            const label = i === 0 ? 'Pengiriman Standar' : i === 1 ? 'Pengisian Terjadwal' : 'Pengiriman Massal';
-            
-            const destination = i === 0 ? 'Industrial Park, Site B, 124 Logistics Way' : 
-                                i === 1 ? 'Metro Construction Site, Downtown Dev Area' : 
-                                'Agri-Corp Reservoir 2, Route 9, Rural District';
+            const createdLabel = new Date(order.createdAt).toLocaleDateString('id-ID', {
+              day: '2-digit',
+              month: 'short',
+              year: 'numeric',
+            });
+            const limitColor = order.status === 'MENUNGGU_KONFIRMASI'
+              ? 'bg-amber-50 text-amber-700 border-amber-100'
+              : 'bg-slate-100 text-slate-550 border-slate-150';
+            const schedule = order.deliverySchedule || 'Jadwal belum diisi';
+            const label = order.waterType || 'Air bersih';
+            const destination = order.deliveryNotes || `Pembeli: ${order.buyer?.name || '-'}`;
 
             return (
               <div key={order.id} className="card p-5 animate-slide-up space-y-4 flex flex-col justify-between" style={{ animationDelay: `${i * 60}ms` }}>
@@ -134,7 +138,7 @@ export default function SellerOrders() {
                 <div className="flex items-center justify-between gap-3">
                   <span className="font-bold text-slate-800 text-xs">{order.orderNumber || `ORD-2023-884${i+1}`}</span>
                   <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold border ${limitColor} flex items-center gap-1`}>
-                    <Clock className="w-2.5 h-2.5" /> {timeLimit}
+                    <Clock className="w-2.5 h-2.5" /> {createdLabel}
                   </span>
                 </div>
 

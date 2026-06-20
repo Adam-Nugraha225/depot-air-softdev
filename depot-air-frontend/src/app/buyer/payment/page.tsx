@@ -54,7 +54,7 @@ export default function BuyerPayment() {
       });
       
       const createdOrder = res.data.data;
-      setOrderNumber(createdOrder.orderNumber || 'VH-88291');
+      setOrderNumber(createdOrder.orderNumber || '');
       
       const date = new Date();
       const formattedDate = date.toLocaleDateString('id-ID', {
@@ -82,8 +82,8 @@ export default function BuyerPayment() {
     );
   }
 
-  const subtotal = vendorData.totalPrice - 50000;
-  const biayaLayanan = 50000;
+  const biayaLayanan = 0;
+  const subtotal = vendorData.totalPrice;
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -213,7 +213,7 @@ export default function BuyerPayment() {
               <div className="flex-1 min-w-0">
                 <span className="inline-block text-[9px] font-bold bg-primary-100 text-primary-700 px-1.5 py-0.5 rounded mb-0.5">VENDOR</span>
                 <h4 className="font-bold text-slate-850 text-xs truncate">{vendorData.name}</h4>
-                <p className="text-[10px] text-slate-500">Air Bersih 8kL</p>
+                <p className="text-[10px] text-slate-500">Air Bersih {vendorData.volume.toLocaleString()} Liter</p>
               </div>
             </div>
 
@@ -301,11 +301,11 @@ export default function BuyerPayment() {
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Ringkasan Pesanan</p>
               
               <div className="flex justify-between">
-                <span className="text-slate-600 font-medium">Air Bersih 8.000 Liter</span>
+                <span className="text-slate-600 font-medium">Air Bersih {vendorData.volume.toLocaleString()} Liter</span>
                 <span className="font-semibold text-slate-800">Rp {subtotal.toLocaleString()}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-500">Mata Air Gunung Papandayan</span>
+                <span className="text-slate-500">{vendorData.name}</span>
                 <span className="text-slate-400">({vendorData.mainLocation})</span>
               </div>
               <div className="flex justify-between border-t border-slate-100 pt-2.5">

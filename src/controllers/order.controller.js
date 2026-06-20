@@ -14,12 +14,28 @@ exports.createOrder = async (req, res, next) => {
       include: { vendorProfile: true }
     });
 
-    if (!vendor || !vendor.vendorProfile) {
+    if (!vendor || vendor.role !== 'VENDOR' || !vendor.vendorProfile) {
       return errorResponse(res, 'Vendor or vendor profile not found', 404);
     }
 
-    const pricePerLiter = vendor.vendorProfile.pricePerLiter || 300;
-    const totalPrice = (volume * pricePerLiter) + parseFloat(serviceFee);
+    const requestedVolume = Number(volume);
+    const serviceFeeAmount = Number(serviceFee || 0);
+    const pricePerLiter = Number(vendor.vendorProfile.pricePerLiter);
+    const defaultCapacity = Number(vendor.vendorProfile.defaultCapacity);
+
+    if (!Number.isInteger(requestedVolume) || requestedVolume <= 0) {
+      return errorResponse(res, 'Order volume must be a whole number greater than 0', 400);
+    }
+
+    if (!Number.isFinite(serviceFeeAmount) || serviceFeeAmount < 0) {
+      return errorResponse(res, 'Service fee must be a valid amount', 400);
+    }
+
+    if (!Number.isFinite(pricePerLiter) || pricePerLiter <= 0 || !Number.isFinite(defaultCapacity) || defaultCapacity <= 0) {
+      return errorResponse(res, 'Vendor profile is incomplete. Price and capacity must be set before ordering.', 400);
+    }
+
+    const totalPrice = (requestedVolume * pricePerLiter) + serviceFeeAmount;
 
     // Generate unique order number
     const orderNumber = `#VH-${Math.floor(10000 + Math.random() * 90000)}-X90`;
@@ -32,9 +48,9 @@ exports.createOrder = async (req, res, next) => {
         orderNumber,
         buyerId: req.user.userId,
         vendorId,
-        volume,
+        volume: requestedVolume,
         pricePerLiter,
-        serviceFee: parseFloat(serviceFee),
+        serviceFee: serviceFeeAmount,
         totalPrice,
         paymentMethod,
         paymentStatus,
@@ -73,9 +89,21 @@ exports.getOrders = async (req, res, next) => {
     const orders = await prisma.order.findMany({
       where,
       include: {
-        vendor: { select: { name: true } },
-        buyer: { select: { name: true } },
-        assignedFleet: { select: { truckId: true, driverName: true, truckType: true, licensePlate: true } }
+        vendor: { select: { id: true, name: true, phone: true } },
+        buyer: { select: { name: true, phone: true } },
+        assignedFleet: {
+          select: {
+            id: true,
+            truckId: true,
+            driverName: true,
+            truckType: true,
+            licensePlate: true,
+            capacity: true,
+            status: true,
+            lat: true,
+            lng: true
+          }
+        }
       },
       orderBy: { createdAt: 'desc' }
     });
