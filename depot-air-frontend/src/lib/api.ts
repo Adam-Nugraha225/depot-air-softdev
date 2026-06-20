@@ -62,7 +62,7 @@ export const userAPI = {
 export const vendorAPI = {
   getVendors: (search?: string) => api.get('/vendors', { params: { search } }),
   getVendorById: (id: string) => api.get(`/vendors/${id}`),
-  updateProfile: (data: { specialty?: string; mainLocation?: string; pricePerLiter?: number; defaultCapacity?: number }) => api.put('/vendors/profile', data),
+  updateProfile: (data: { specialty?: string; mainLocation?: string; pricePerLiter?: number; defaultCapacity?: number; imageUrl?: string }) => api.put('/vendors/profile', data),
 };
 
 // Order APIs

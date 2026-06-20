@@ -15,6 +15,7 @@ interface VendorData {
   pricePerLiter: number;
   volume: number;
   totalPrice: number;
+  imageUrl?: string;
 }
 
 export default function BuyerPayment() {
@@ -307,7 +308,7 @@ export default function BuyerPayment() {
             {/* Vendor info snippet */}
             <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl border border-slate-100">
               <div className="w-10 h-10 rounded-lg overflow-hidden bg-slate-200">
-                <img src="/images/water_truck.png" alt={vendorData.name} className="w-full h-full object-cover" />
+                <img src={vendorData.imageUrl || "/images/water_truck.png"} alt={vendorData.name} className="w-full h-full object-cover" />
               </div>
               <div className="flex-1 min-w-0">
                 <span className="inline-block text-[9px] font-bold bg-primary-100 text-primary-700 px-1.5 py-0.5 rounded mb-0.5">VENDOR</span>

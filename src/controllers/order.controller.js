@@ -62,6 +62,26 @@ exports.createOrder = async (req, res, next) => {
       }
     });
 
+    // Save payment method to the PaymentMethod table if it does not already exist
+    if (paymentMethod) {
+      const existingMethod = await prisma.paymentMethod.findFirst({
+        where: {
+          userId: req.user.userId,
+          type: paymentMethod
+        }
+      });
+
+      if (!existingMethod) {
+        await prisma.paymentMethod.create({
+          data: {
+            userId: req.user.userId,
+            type: paymentMethod,
+            details: `Saved payment method: ${paymentMethod}`
+          }
+        });
+      }
+    }
+
     return successResponse(res, order, 'Order created successfully', 201);
   } catch (error) {
     next(error);

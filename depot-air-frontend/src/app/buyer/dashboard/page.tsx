@@ -15,6 +15,7 @@ interface Vendor {
     mainLocation?: string | null;
     pricePerLiter: number;
     defaultCapacity: number;
+    imageUrl?: string | null;
   } | null;
 }
 
@@ -72,6 +73,7 @@ export default function BuyerDashboard() {
       pricePerLiter: price,
       volume: capacity,
       totalPrice: total,
+      imageUrl: selectedVendor.vendorProfile?.imageUrl || '/images/water_truck.png'
     }));
     window.location.href = '/buyer/payment';
   };
@@ -128,7 +130,7 @@ export default function BuyerDashboard() {
             return (
               <div key={vendor.id} className="card p-0 overflow-hidden animate-slide-up" style={{ animationDelay: `${i * 80}ms` }}>
                 <div className="h-40 bg-slate-100 relative overflow-hidden">
-                  <img src="/images/water_truck.png" alt={vendor.name} className="w-full h-full object-cover" />
+                  <img src={vendor.vendorProfile?.imageUrl || "/images/water_truck.png"} alt={vendor.name} className="w-full h-full object-cover" />
                   <div className="absolute top-3 right-3 bg-white/95 backdrop-blur-sm rounded-lg px-2 py-1 flex items-center gap-1 shadow-sm">
                     <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
                     <span className="text-xs font-bold text-slate-700">{(vendor.vendorProfile?.rating ?? 0).toFixed(1)}</span>
@@ -181,7 +183,7 @@ export default function BuyerDashboard() {
 
             <div className="border border-slate-150 rounded-2xl overflow-hidden mb-4 bg-white shadow-sm">
               <div className="h-32 bg-slate-100 relative">
-                <img src="/images/water_truck.png" alt={selectedVendor.name} className="w-full h-full object-cover" />
+                <img src={selectedVendor.vendorProfile?.imageUrl || "/images/water_truck.png"} alt={selectedVendor.name} className="w-full h-full object-cover" />
                 <div className="absolute top-2 right-2 bg-white/95 backdrop-blur-sm rounded-lg px-2 py-0.5 flex items-center gap-1 shadow-sm">
                   <Star className="w-3 h-3 text-amber-400 fill-amber-400" />
                   <span className="text-[10px] font-bold text-slate-700">{(selectedVendor.vendorProfile?.rating ?? 0).toFixed(1)}</span>

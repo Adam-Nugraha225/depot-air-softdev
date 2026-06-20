@@ -19,6 +19,7 @@ export default function SellerSettings() {
   const [mainLocation, setMainLocation] = useState('');
   const [pricePerLiter, setPricePerLiter] = useState('');
   const [defaultCapacity, setDefaultCapacity] = useState('');
+  const [imageUrl, setImageUrl] = useState('');
   const [vendorLoading, setVendorLoading] = useState(false);
   const [vendorSaved, setVendorSaved] = useState(false);
 
@@ -31,6 +32,7 @@ export default function SellerSettings() {
     setMainLocation(user.vendorProfile?.mainLocation || '');
     setPricePerLiter(user.vendorProfile?.pricePerLiter ? String(user.vendorProfile.pricePerLiter) : '');
     setDefaultCapacity(user.vendorProfile?.defaultCapacity ? String(user.vendorProfile.defaultCapacity) : '');
+    setImageUrl(user.vendorProfile?.imageUrl || '');
   }, [user]);
 
   const handleAccountSave = async (event: FormEvent) => {
@@ -78,6 +80,7 @@ export default function SellerSettings() {
         mainLocation: mainLocation.trim(),
         pricePerLiter: parsedPrice,
         defaultCapacity: parsedCapacity,
+        imageUrl: imageUrl.trim() || undefined,
       });
       await refreshProfile();
       setVendorSaved(true);
@@ -187,6 +190,17 @@ export default function SellerSettings() {
               <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-primary-500" />
               <input type="number" min="1" step="1" className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-200 bg-white text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-primary-500/20" placeholder="8000" value={defaultCapacity} onChange={(e) => setDefaultCapacity(e.target.value)} required />
             </div>
+          </div>
+
+          <div className="sm:col-span-2">
+            <label className="text-xs font-bold text-slate-500 mb-1.5 block">URL Gambar Air/Armada (Opsional)</label>
+            <input 
+              type="text" 
+              className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-primary-500/20" 
+              placeholder="Contoh: https://images.unsplash.com/photo-1548858850-e37452d765fb atau biarkan kosong untuk gambar default" 
+              value={imageUrl} 
+              onChange={(e) => setImageUrl(e.target.value)} 
+            />
           </div>
 
           <div className="sm:col-span-2 mt-2">

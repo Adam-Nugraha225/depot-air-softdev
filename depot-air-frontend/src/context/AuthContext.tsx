@@ -19,6 +19,7 @@ interface User {
     mainLocation?: string | null;
     pricePerLiter?: number;
     defaultCapacity?: number;
+    imageUrl?: string | null;
   } | null;
 }
 

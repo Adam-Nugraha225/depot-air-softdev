@@ -54,7 +54,7 @@ exports.getVendorById = async (req, res, next) => {
 
 exports.updateVendorProfile = async (req, res, next) => {
   try {
-    const { specialty, mainLocation, pricePerLiter, defaultCapacity } = req.body;
+    const { specialty, mainLocation, pricePerLiter, defaultCapacity, imageUrl } = req.body;
 
     const existingProfile = await prisma.vendorProfile.findUnique({
       where: { userId: req.user.userId }
@@ -72,6 +72,9 @@ exports.updateVendorProfile = async (req, res, next) => {
     const nextDefaultCapacity = defaultCapacity !== undefined
       ? Number(defaultCapacity)
       : existingProfile?.defaultCapacity || 0;
+    const nextImageUrl = imageUrl !== undefined
+      ? (String(imageUrl).trim() !== '' ? String(imageUrl).trim() : null)
+      : existingProfile?.imageUrl || null;
 
     if (!Number.isFinite(nextPricePerLiter) || nextPricePerLiter < 0) {
       return errorResponse(res, 'Price per liter must be a valid amount', 400);
@@ -96,6 +99,7 @@ exports.updateVendorProfile = async (req, res, next) => {
         mainLocation: nextMainLocation,
         pricePerLiter: nextPricePerLiter,
         defaultCapacity: nextDefaultCapacity,
+        imageUrl: nextImageUrl,
         profileCompletion,
       },
       create: {
@@ -104,6 +108,7 @@ exports.updateVendorProfile = async (req, res, next) => {
         mainLocation: nextMainLocation,
         pricePerLiter: nextPricePerLiter,
         defaultCapacity: nextDefaultCapacity,
+        imageUrl: nextImageUrl,
         profileCompletion,
       }
     });

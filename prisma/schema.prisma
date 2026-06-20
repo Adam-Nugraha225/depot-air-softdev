@@ -38,6 +38,7 @@ model VendorProfile {
   mainLocation       String?
   pricePerLiter      Float    @default(0)
   defaultCapacity    Int      @default(0)
+  imageUrl           String?
 }
 
 model Address {
