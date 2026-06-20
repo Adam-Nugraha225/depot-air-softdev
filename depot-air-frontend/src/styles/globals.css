@@ -88,7 +88,7 @@
 
   /* Modal Overlay */
   .modal-overlay {
-    @apply fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center animate-fade-in;
+    @apply fixed inset-0 bg-black/40 backdrop-blur-sm z-[9999] flex items-center justify-center animate-fade-in;
   }
   .modal-content {
     @apply bg-white rounded-2xl shadow-2xl p-6 max-w-md w-full mx-4 animate-slide-up max-h-[90vh] overflow-y-auto;
