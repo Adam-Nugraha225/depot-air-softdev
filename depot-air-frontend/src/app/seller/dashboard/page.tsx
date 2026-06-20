@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { analyticsAPI, orderAPI, fleetAPI, userAPI } from '@/lib/api';
 import { DollarSign, TrendingUp, Truck, Star, ShieldCheck, Package, Loader2, CheckCircle2, AlertTriangle, ArrowUpRight, MapPin } from 'lucide-react';
 import Link from 'next/link';
-import OpenStreetMapEmbed from '@/components/maps/OpenStreetMapEmbed';
+import OpenStreetMapEmbed, { geocodeAddress } from '@/components/maps/OpenStreetMapEmbed';
 
 interface Analytics {
   totalRevenue: number;
@@ -106,8 +106,6 @@ export default function SellerDashboard() {
   const verificationStatus = profile?.verificationStatus || 'PENDING';
   const profileCompletion = profile?.profileCompletion ?? 0;
   const locatedFleet = fleets.find(fleet => typeof fleet.lat === 'number' && typeof fleet.lng === 'number');
-  const mapLat = locatedFleet?.lat ?? DEFAULT_MAP_CENTER.lat;
-  const mapLng = locatedFleet?.lng ?? DEFAULT_MAP_CENTER.lng;
 
   if (loading) {
     return <div className="flex justify-center py-20"><Loader2 className="w-8 h-8 text-primary-500 animate-spin" /></div>;
@@ -282,8 +280,12 @@ export default function SellerDashboard() {
 
               <div className="relative rounded-xl overflow-hidden border border-slate-150 h-44 bg-slate-100">
                 <OpenStreetMapEmbed
-                  centerLat={mapLat}
-                  centerLng={mapLng}
+                  vendorLat={profile?.mainLocation ? geocodeAddress(profile.mainLocation)?.lat : undefined}
+                  vendorLng={profile?.mainLocation ? geocodeAddress(profile.mainLocation)?.lng : undefined}
+                  truckLat={locatedFleet?.lat ?? undefined}
+                  truckLng={locatedFleet?.lng ?? undefined}
+                  vendorLabel="Depot Anda"
+                  truckLabel={locatedFleet ? `${locatedFleet.truckId} - ${locatedFleet.driverName}` : 'Armada'}
                   zoom={locatedFleet ? 14 : 12}
                   title="Peta armada seller"
                 />

@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/components/ui/Toast';
 import { userAPI } from '@/lib/api';
 import { User, MapPin, Phone, Mail, Save, Plus, Pencil, Trash2, X, Loader2, CheckCircle2, Star, Eye } from 'lucide-react';
+
 
 interface Address {
   id: string;
@@ -16,6 +17,94 @@ interface Address {
   street: string;
   details?: string;
   isPrimary: boolean;
+}
+
+interface ComboboxProps {
+  label: string;
+  placeholder: string;
+  value: string;
+  onChange: (val: string, id?: string) => void;
+  items: { id: string; name: string }[];
+  loading?: boolean;
+  disabled?: boolean;
+}
+
+function SearchCombobox({
+  label,
+  placeholder,
+  value,
+  onChange,
+  items,
+  loading = false,
+  disabled = false
+}: ComboboxProps) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const wrapperRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setSearchQuery(value);
+  }, [value]);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+        setSearchQuery(value);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [value]);
+
+  const filteredItems = items.filter(item =>
+    item.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  return (
+    <div ref={wrapperRef} className="relative w-full">
+      <label className="font-bold text-slate-500 mb-1.5 block">{label}</label>
+      <input
+        type="text"
+        disabled={disabled}
+        className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-primary-500/20 disabled:bg-slate-50 disabled:text-slate-400 disabled:cursor-not-allowed"
+        placeholder={placeholder}
+        value={searchQuery}
+        onChange={(e) => {
+          setSearchQuery(e.target.value);
+          setIsOpen(true);
+        }}
+        onFocus={() => {
+          if (!disabled) setIsOpen(true);
+        }}
+        required
+      />
+      {isOpen && !disabled && (
+        <div className="absolute z-[60] left-0 right-0 mt-1 max-h-48 overflow-y-auto bg-white border border-slate-200 rounded-xl shadow-lg text-slate-800">
+          {loading ? (
+            <div className="px-3 py-2 text-slate-400 italic">Memuat data...</div>
+          ) : filteredItems.length === 0 ? (
+            <div className="px-3 py-2 text-slate-400 italic">Tidak ditemukan</div>
+          ) : (
+            filteredItems.map(item => (
+              <button
+                key={item.id}
+                type="button"
+                className="w-full text-left px-3 py-2 text-slate-700 hover:bg-primary-50 hover:text-primary-600 transition-colors text-xs"
+                onClick={() => {
+                  onChange(item.name, item.id);
+                  setSearchQuery(item.name);
+                  setIsOpen(false);
+                }}
+              >
+                {item.name}
+              </button>
+            ))
+          )}
+        </div>
+      )}
+    </div>
+  );
 }
 
 export default function BuyerSettings() {
@@ -43,6 +132,59 @@ export default function BuyerSettings() {
     isPrimary: false
   });
   const [savingAddress, setSavingAddress] = useState(false);
+
+  // Region combobox states
+  const [provinces, setProvinces] = useState<{ id: string; name: string }[]>([]);
+  const [cities, setCities] = useState<{ id: string; name: string }[]>([]);
+  const [districts, setDistricts] = useState<{ id: string; name: string }[]>([]);
+  const [selectedProvinceId, setSelectedProvinceId] = useState('');
+  const [selectedCityId, setSelectedCityId] = useState('');
+  const [loadingProvinces, setLoadingProvinces] = useState(false);
+  const [loadingCities, setLoadingCities] = useState(false);
+  const [loadingDistricts, setLoadingDistricts] = useState(false);
+
+  const fetchProvinces = async () => {
+    if (provinces.length > 0) return provinces;
+    setLoadingProvinces(true);
+    try {
+      const res = await fetch('https://www.emsifa.com/api-wilayah-indonesia/api/provinces.json');
+      const data = await res.json();
+      setProvinces(data);
+      return data;
+    } catch (err) {
+      showToast('Gagal memuat daftar provinsi', 'error');
+    } finally {
+      setLoadingProvinces(false);
+    }
+  };
+
+  const fetchCities = async (provId: string) => {
+    setLoadingCities(true);
+    try {
+      const res = await fetch(`https://www.emsifa.com/api-wilayah-indonesia/api/regencies/${provId}.json`);
+      const data = await res.json();
+      setCities(data);
+      return data;
+    } catch (err) {
+      showToast('Gagal memuat daftar kota', 'error');
+    } finally {
+      setLoadingCities(false);
+    }
+  };
+
+  const fetchDistricts = async (cityId: string) => {
+    setLoadingDistricts(true);
+    try {
+      const res = await fetch(`https://www.emsifa.com/api-wilayah-indonesia/api/districts/${cityId}.json`);
+      const data = await res.json();
+      setDistricts(data);
+      return data;
+    } catch (err) {
+      showToast('Gagal memuat daftar kecamatan', 'error');
+    } finally {
+      setLoadingDistricts(false);
+    }
+  };
 
   useEffect(() => {
     if (user) {
@@ -77,7 +219,7 @@ export default function BuyerSettings() {
     }
   };
 
-  const openAddModal = () => {
+  const openAddModal = async () => {
     setEditingAddress(null);
     setAddressForm({
       recipientName: '',
@@ -89,10 +231,15 @@ export default function BuyerSettings() {
       details: '',
       isPrimary: false
     });
+    setSelectedProvinceId('');
+    setSelectedCityId('');
+    setCities([]);
+    setDistricts([]);
     setShowAddressModal(true);
+    await fetchProvinces();
   };
 
-  const openEditModal = (addr: Address) => {
+  const openEditModal = async (addr: Address) => {
     setEditingAddress(addr);
     setAddressForm({
       recipientName: addr.recipientName || '',
@@ -104,7 +251,27 @@ export default function BuyerSettings() {
       details: addr.details || '',
       isPrimary: addr.isPrimary
     });
+    setSelectedProvinceId('');
+    setSelectedCityId('');
+    setCities([]);
+    setDistricts([]);
     setShowAddressModal(true);
+
+    const provs = await fetchProvinces();
+    if (provs && addr.province) {
+      const matchProv = provs.find((p: any) => p.name.toLowerCase() === addr.province.toLowerCase() || p.name.toLowerCase().includes(addr.province.toLowerCase()));
+      if (matchProv) {
+        setSelectedProvinceId(matchProv.id);
+        const cts = await fetchCities(matchProv.id);
+        if (cts && addr.city) {
+          const matchCity = cts.find((c: any) => c.name.toLowerCase() === addr.city.toLowerCase() || c.name.toLowerCase().includes(addr.city.toLowerCase()));
+          if (matchCity) {
+            setSelectedCityId(matchCity.id);
+            await fetchDistricts(matchCity.id);
+          }
+        }
+      }
+    }
   };
 
   const handleSaveAddress = async (e: React.FormEvent) => {
@@ -285,43 +452,50 @@ export default function BuyerSettings() {
               </div>
 
               <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="font-bold text-slate-500 mb-1.5 block">Provinsi</label>
-                  <input 
-                    type="text" 
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-primary-500/20" 
-                    placeholder="Contoh: Jawa Barat" 
-                    value={addressForm.province} 
-                    onChange={(e) => setAddressForm(p => ({ ...p, province: e.target.value }))} 
-                    required 
-                  />
-                </div>
+                <SearchCombobox
+                  label="Provinsi"
+                  placeholder="Contoh: Jawa Barat"
+                  value={addressForm.province}
+                  items={provinces}
+                  loading={loadingProvinces}
+                  onChange={(name, id) => {
+                    setAddressForm(p => ({ ...p, province: name, city: '', district: '' }));
+                    if (id) {
+                      setSelectedProvinceId(id);
+                      fetchCities(id);
+                    }
+                  }}
+                />
 
-                <div>
-                  <label className="font-bold text-slate-500 mb-1.5 block">Kota / Kabupaten</label>
-                  <input 
-                    type="text" 
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-primary-500/20" 
-                    placeholder="Contoh: Bandung" 
-                    value={addressForm.city} 
-                    onChange={(e) => setAddressForm(p => ({ ...p, city: e.target.value }))} 
-                    required 
-                  />
-                </div>
+                <SearchCombobox
+                  label="Kota / Kabupaten"
+                  placeholder="Contoh: Bandung"
+                  value={addressForm.city}
+                  items={cities}
+                  loading={loadingCities}
+                  disabled={!selectedProvinceId}
+                  onChange={(name, id) => {
+                    setAddressForm(p => ({ ...p, city: name, district: '' }));
+                    if (id) {
+                      setSelectedCityId(id);
+                      fetchDistricts(id);
+                    }
+                  }}
+                />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="font-bold text-slate-500 mb-1.5 block">Kecamatan</label>
-                  <input 
-                    type="text" 
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-primary-500/20" 
-                    placeholder="Contoh: Cibiru" 
-                    value={addressForm.district} 
-                    onChange={(e) => setAddressForm(p => ({ ...p, district: e.target.value }))} 
-                    required 
-                  />
-                </div>
+                <SearchCombobox
+                  label="Kecamatan"
+                  placeholder="Contoh: Cibiru"
+                  value={addressForm.district}
+                  items={districts}
+                  loading={loadingDistricts}
+                  disabled={!selectedCityId}
+                  onChange={(name) => {
+                    setAddressForm(p => ({ ...p, district: name }));
+                  }}
+                />
 
                 <div>
                   <label className="font-bold text-slate-500 mb-1.5 block">Kode Pos</label>

@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { orderAPI, fleetAPI } from '@/lib/api';
 import { Truck, MapPin, Package, Loader2, Clock, CheckCircle2, Phone, AlertTriangle } from 'lucide-react';
 import Link from 'next/link';
-import OpenStreetMapEmbed from '@/components/maps/OpenStreetMapEmbed';
+import OpenStreetMapEmbed, { geocodeAddress } from '@/components/maps/OpenStreetMapEmbed';
 
 interface Fleet {
   id: string;
@@ -22,6 +22,13 @@ interface Order {
   totalPrice: number;
   status: string;
   createdAt: string;
+  address?: string | null;
+  vendor?: {
+    name: string;
+    vendorProfile?: {
+      mainLocation?: string | null;
+    } | null;
+  } | null;
   buyer: { name: string; phone?: string | null };
   assignedFleet?: {
     truckId: string;
@@ -125,8 +132,28 @@ export default function SellerTracking() {
   const assignedFleet = activeOrder.assignedFleet;
   const hasFleetLocation = typeof assignedFleet?.lat === 'number' && typeof assignedFleet?.lng === 'number';
   const locatedFleet = fleets.find(fleet => fleet.truckId === assignedFleet?.truckId);
-  const mapLat = hasFleetLocation ? assignedFleet!.lat! : locatedFleet?.lat ?? DEFAULT_MAP_CENTER.lat;
-  const mapLng = hasFleetLocation ? assignedFleet!.lng! : locatedFleet?.lng ?? DEFAULT_MAP_CENTER.lng;
+
+  // Resolve map coordinates
+  const vendorCoords = geocodeAddress(activeOrder.vendor?.vendorProfile?.mainLocation || '') || geocodeAddress('Dago Atas') || { lat: -6.8533, lng: 107.6173 };
+  const buyerCoords = geocodeAddress(activeOrder.address || '') || geocodeAddress('Kabupaten Bandung') || { lat: -7.0208, lng: 107.5881 };
+
+  let truckLat: number | undefined = undefined;
+  let truckLng: number | undefined = undefined;
+  
+  if (hasFleetLocation) {
+    truckLat = assignedFleet!.lat!;
+    truckLng = assignedFleet!.lng!;
+  } else if (locatedFleet?.lat != null && locatedFleet?.lng != null) {
+    truckLat = locatedFleet.lat;
+    truckLng = locatedFleet.lng;
+  } else if (activeOrder.status === 'DALAM_PERJALANAN') {
+    // Simulated truck location halfway if currently delivering
+    truckLat = (vendorCoords.lat + buyerCoords.lat) / 2;
+    truckLng = (vendorCoords.lng + buyerCoords.lng) / 2;
+  }
+
+  const mapLat = truckLat ?? DEFAULT_MAP_CENTER.lat;
+  const mapLng = truckLng ?? DEFAULT_MAP_CENTER.lng;
   const driverName = assignedFleet?.driverName || 'Belum ditugaskan';
   const truckId = assignedFleet?.truckId || 'Armada belum dipilih';
   const capacityText = assignedFleet?.capacity ? `${assignedFleet.capacity.toLocaleString()} L` : 'Kapasitas belum diisi';
@@ -211,15 +238,22 @@ export default function SellerTracking() {
 
       <div className="hidden sm:block flex-1 relative bg-slate-100">
         <OpenStreetMapEmbed
-          centerLat={mapLat}
-          centerLng={mapLng}
+          vendorLat={vendorCoords.lat}
+          vendorLng={vendorCoords.lng}
+          buyerLat={buyerCoords.lat}
+          buyerLng={buyerCoords.lng}
+          truckLat={truckLat}
+          truckLng={truckLng}
+          vendorLabel={activeOrder.vendor?.name || 'Depot Anda'}
+          buyerLabel={activeOrder.buyer?.name || 'Lokasi Pembeli'}
+          truckLabel={driverName ? `Armada - ${driverName}` : 'Armada'}
           zoom={hasFleetLocation || locatedFleet ? 14 : 12}
           title={`Peta pengiriman ${activeOrder.orderNumber}`}
         />
 
         <div className="absolute top-4 right-4 bg-white/95 backdrop-blur-sm rounded-xl p-3 shadow-md border border-slate-100 max-w-xs">
           <div className="flex items-center gap-2">
-            {hasFleetLocation || locatedFleet ? (
+            {hasFleetLocation || locatedFleet || (activeOrder.status === 'DALAM_PERJALANAN') ? (
               <span className="w-2 h-2 rounded-full bg-blue-500 animate-ping flex-shrink-0" />
             ) : (
               <AlertTriangle className="w-4 h-4 text-amber-500 flex-shrink-0" />
@@ -227,7 +261,9 @@ export default function SellerTracking() {
             <p className="text-[10px] font-bold text-slate-700 leading-snug">
               {hasFleetLocation || locatedFleet
                 ? `Lokasi ${truckId}: ${mapLat.toFixed(5)}, ${mapLng.toFixed(5)}`
-                : 'Koordinat armada belum dikirim oleh backend.'}
+                : activeOrder.status === 'DALAM_PERJALANAN'
+                  ? 'Simulasi rute perjalanan armada.'
+                  : 'Koordinat armada belum dikirim oleh backend.'}
             </p>
           </div>
         </div>

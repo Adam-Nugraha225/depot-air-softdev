@@ -67,7 +67,7 @@ export const vendorAPI = {
 
 // Order APIs
 export const orderAPI = {
-  createOrder: (data: { vendorId: string; volume: number; paymentMethod?: string; serviceFee?: number; deliveryNotes?: string; waterType?: string; deliverySchedule?: string }) => api.post('/orders', data),
+  createOrder: (data: { vendorId: string; volume: number; paymentMethod?: string; serviceFee?: number; deliveryNotes?: string; address?: string; waterType?: string; deliverySchedule?: string }) => api.post('/orders', data),
   getOrders: (params?: { status?: string; search?: string }) => api.get('/orders', { params }),
   getOrderById: (id: string) => api.get(`/orders/${id}`),
   updateOrderStatus: (id: string, status: string) => api.put(`/orders/${id}/status`, { status }),

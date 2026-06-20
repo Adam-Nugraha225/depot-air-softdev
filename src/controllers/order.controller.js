@@ -5,7 +5,7 @@ exports.createOrder = async (req, res, next) => {
   try {
     const { 
       vendorId, volume, paymentMethod, serviceFee = 0, 
-      deliveryNotes, waterType, deliverySchedule 
+      deliveryNotes, address, waterType, deliverySchedule 
     } = req.body;
 
     // Fetch vendor profile to get pricePerLiter
@@ -55,6 +55,7 @@ exports.createOrder = async (req, res, next) => {
         paymentMethod,
         paymentStatus,
         deliveryNotes,
+        address,
         waterType,
         deliverySchedule,
         status: 'MENUNGGU_KONFIRMASI'
@@ -89,7 +90,18 @@ exports.getOrders = async (req, res, next) => {
     const orders = await prisma.order.findMany({
       where,
       include: {
-        vendor: { select: { id: true, name: true, phone: true } },
+        vendor: { 
+          select: { 
+            id: true, 
+            name: true, 
+            phone: true,
+            vendorProfile: {
+              select: {
+                mainLocation: true
+              }
+            }
+          } 
+        },
         buyer: { select: { name: true, phone: true } },
         assignedFleet: {
           select: {
@@ -120,7 +132,17 @@ exports.getOrderById = async (req, res, next) => {
     const order = await prisma.order.findUnique({
       where: { id },
       include: {
-        vendor: { select: { name: true, phone: true } },
+        vendor: { 
+          select: { 
+            name: true, 
+            phone: true,
+            vendorProfile: {
+              select: {
+                mainLocation: true
+              }
+            }
+          } 
+        },
         buyer: { select: { name: true, phone: true } },
         assignedFleet: true
       }

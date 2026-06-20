@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { orderAPI } from '@/lib/api';
 import { Truck, MapPin, Phone, MessageSquare, Download, CheckCircle2, Loader2, FileText, X, Package } from 'lucide-react';
 import Link from 'next/link';
-import OpenStreetMapEmbed from '@/components/maps/OpenStreetMapEmbed';
+import OpenStreetMapEmbed, { geocodeAddress } from '@/components/maps/OpenStreetMapEmbed';
 
 interface Order {
   id: string;
@@ -13,7 +13,15 @@ interface Order {
   totalPrice: number;
   status: string;
   createdAt: string;
-  vendor: { id: string; name: string; phone?: string };
+  address?: string;
+  vendor: { 
+    id: string; 
+    name: string; 
+    phone?: string;
+    vendorProfile?: {
+      mainLocation?: string;
+    };
+  };
   buyer: { name: string; phone?: string };
   assignedFleet?: { id: string; truckId: string; driverName: string; status?: string; lat?: number; lng?: number };
   waterType?: string;
@@ -100,9 +108,26 @@ export default function BuyerTracking() {
                     (order.status === 'DIKONFIRMASI' || order.status === 'DISIAPKAN') ? 1 :
                     order.status === 'DALAM_PERJALANAN' ? 2 :
                     order.status === 'SELESAI' ? 3 : 1;
+
+  // Resolve map coordinates
+  const vendorCoords = geocodeAddress(order.vendor?.vendorProfile?.mainLocation || '') || geocodeAddress('Dago Atas') || { lat: -6.8533, lng: 107.6173 };
+  const buyerCoords = geocodeAddress(order.address || '') || geocodeAddress('Kabupaten Bandung') || { lat: -7.0208, lng: 107.5881 };
+
   const hasFleetLocation = typeof order.assignedFleet?.lat === 'number' && typeof order.assignedFleet?.lng === 'number';
-  const mapLat = hasFleetLocation ? order.assignedFleet!.lat! : DEFAULT_MAP_CENTER.lat;
-  const mapLng = hasFleetLocation ? order.assignedFleet!.lng! : DEFAULT_MAP_CENTER.lng;
+  let truckLat: number | undefined = undefined;
+  let truckLng: number | undefined = undefined;
+
+  if (order.status === 'DALAM_PERJALANAN') {
+    if (hasFleetLocation) {
+      truckLat = order.assignedFleet!.lat!;
+      truckLng = order.assignedFleet!.lng!;
+    } else {
+      // Mock / simulate truck position halfway between vendor and buyer coordinates
+      truckLat = (vendorCoords.lat + buyerCoords.lat) / 2;
+      truckLng = (vendorCoords.lng + buyerCoords.lng) / 2;
+    }
+  }
+
   const driverName = order.assignedFleet?.driverName || 'Belum ditugaskan';
   const truckId = order.assignedFleet?.truckId || 'Armada belum ditentukan';
 
@@ -183,8 +208,15 @@ export default function BuyerTracking() {
 
           <div className="relative rounded-2xl overflow-hidden border border-slate-150 h-80 bg-slate-100">
             <OpenStreetMapEmbed
-              centerLat={mapLat}
-              centerLng={mapLng}
+              vendorLat={vendorCoords.lat}
+              vendorLng={vendorCoords.lng}
+              buyerLat={buyerCoords.lat}
+              buyerLng={buyerCoords.lng}
+              truckLat={truckLat}
+              truckLng={truckLng}
+              vendorLabel={order.vendor.name}
+              buyerLabel={order.buyer.name}
+              truckLabel={order.assignedFleet?.driverName ? `Armada - ${order.assignedFleet.driverName}` : 'Armada Pengiriman'}
               zoom={hasFleetLocation ? 14 : 12}
               title={`Peta pesanan ${order.orderNumber}`}
             />
@@ -194,12 +226,14 @@ export default function BuyerTracking() {
                 <MapPin className="w-4 h-4 text-primary-600 mt-0.5 flex-shrink-0" />
                 <div>
                   <p className="font-bold text-slate-800 text-[11px]">
-                    {hasFleetLocation ? 'Lokasi armada saat ini' : 'Area pengiriman'}
+                    {hasFleetLocation ? 'Lokasi armada saat ini' : 'Rute pengiriman'}
                   </p>
                   <p className="text-[10px] text-slate-500 mt-0.5">
                     {hasFleetLocation
-                      ? `${mapLat.toFixed(5)}, ${mapLng.toFixed(5)}`
-                      : 'Backend belum mengirim koordinat armada untuk pesanan ini.'}
+                      ? `${order.assignedFleet!.lat!.toFixed(5)}, ${order.assignedFleet!.lng!.toFixed(5)}`
+                      : order.status === 'DALAM_PERJALANAN' 
+                        ? 'Simulasi rute perjalanan armada.'
+                        : 'Menunggu armada berangkat.'}
                   </p>
                 </div>
               </div>

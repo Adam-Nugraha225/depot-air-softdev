@@ -74,6 +74,7 @@ model Order {
   paymentMethod    String?
   paymentStatus    String   @default("PENDING") // "PENDING" | "LUNAS" | "GAGAL"
   deliveryNotes    String?
+  address          String?
   waterType        String?
   deliverySchedule String?
   status           String   @default("MENUNGGU_KONFIRMASI") // MENUNGGU_KONFIRMASI | DIKONFIRMASI | DISIAPKAN | DALAM_PERJALANAN | SELESAI | DITOLAK
