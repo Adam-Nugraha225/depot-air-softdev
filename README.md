@@ -11,9 +11,8 @@
 
 | Nama | Role |
 |---|---|
-| [Nama Anggota 1] | Backend Engineer |
-| [Nama Anggota 2] | Frontend Engineer |
-| [Nama Anggota 3] | UI/UX Designer |
+| Adam Nugraha | Backend Engineer |
+| Muhammad Arif Billah | Frontend Engineer |
 
 ---
 
