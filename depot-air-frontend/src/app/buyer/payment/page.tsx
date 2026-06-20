@@ -111,8 +111,10 @@ export default function BuyerPayment() {
       setSuccess(true);
       sessionStorage.removeItem('selectedVendor');
       showToast('Pembayaran berhasil! Pesanan Anda segera diproses.', 'success');
-    } catch (err) {
-      showToast('Gagal memproses pembayaran. Coba lagi.', 'error');
+    } catch (err: any) {
+      console.error('Payment Error details:', err);
+      const errMsg = err.response?.data?.message || err.message || 'Gagal memproses pembayaran. Coba lagi.';
+      showToast(`Gagal: ${errMsg}`, 'error');
     } finally {
       setPaying(false);
     }
