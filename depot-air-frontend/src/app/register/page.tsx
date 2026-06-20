@@ -51,10 +51,11 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen flex">
+    <div className="h-screen overflow-hidden flex bg-white">
       {/* Left Form Section */}
-      <div className="flex-1 flex items-center justify-center p-8 bg-white">
-        <div className="w-full max-w-md animate-fade-in bg-[#F4F8FC] rounded-3xl p-8 shadow-sm border border-slate-100">
+      <div className="flex-1 h-full overflow-y-auto bg-white px-5 py-8 sm:px-8">
+        <div className="min-h-full flex items-center justify-center">
+          <div className="w-full max-w-md animate-fade-in bg-[#F4F8FC] rounded-3xl p-6 sm:p-8 shadow-sm border border-slate-100">
           <div className="text-center mb-6">
             <h2 className="text-xl font-bold text-slate-800 mb-1">Silakan masukkan detail Anda</h2>
             <p className="text-sm text-slate-500">untuk mendaftar</p>
@@ -228,12 +229,13 @@ export default function RegisterPage() {
             </svg>
             Login with Google
           </button>
+          </div>
         </div>
       </div>
 
       {/* Right Hero Section - Pure background image as in PDF */}
       <div 
-        className="hidden lg:block lg:w-1/2 bg-cover bg-center" 
+        className="hidden lg:block lg:w-1/2 h-full flex-shrink-0 bg-cover bg-center" 
         style={{ backgroundImage: "url('/images/bg.png')" }}
       />
     </div>

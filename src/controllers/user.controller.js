@@ -23,7 +23,7 @@ exports.updateProfile = async (req, res, next) => {
     const user = await prisma.user.update({
       where: { id: req.user.userId },
       data: { name, phone },
-      select: { id: true, name: true, email: true, phone: true }
+      select: { id: true, name: true, email: true, phone: true, role: true, vendorProfile: true }
     });
     return successResponse(res, user, 'Profile updated successfully');
   } catch (error) {

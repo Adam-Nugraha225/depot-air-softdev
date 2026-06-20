@@ -1,6 +1,10 @@
 import axios from 'axios';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_URL ||
+  (process.env.NODE_ENV === 'production'
+    ? 'https://depot-air-backend.vercel.app/api'
+    : 'http://localhost:5000/api');
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -58,12 +62,12 @@ export const userAPI = {
 export const vendorAPI = {
   getVendors: (search?: string) => api.get('/vendors', { params: { search } }),
   getVendorById: (id: string) => api.get(`/vendors/${id}`),
-  updateProfile: (data: { specialty?: string; mainLocation?: string; pricePerLiter?: number; defaultCapacity?: number }) => api.put('/vendors/profile', data),
+  updateProfile: (data: { specialty?: string; mainLocation?: string; pricePerLiter?: number; defaultCapacity?: number; imageUrl?: string }) => api.put('/vendors/profile', data),
 };
 
 // Order APIs
 export const orderAPI = {
-  createOrder: (data: { vendorId: string; volume: number; paymentMethod?: string; serviceFee?: number; deliveryNotes?: string; waterType?: string; deliverySchedule?: string }) => api.post('/orders', data),
+  createOrder: (data: { vendorId: string; volume: number; paymentMethod?: string; serviceFee?: number; deliveryNotes?: string; address?: string; waterType?: string; deliverySchedule?: string }) => api.post('/orders', data),
   getOrders: (params?: { status?: string; search?: string }) => api.get('/orders', { params }),
   getOrderById: (id: string) => api.get(`/orders/${id}`),
   updateOrderStatus: (id: string, status: string) => api.put(`/orders/${id}/status`, { status }),

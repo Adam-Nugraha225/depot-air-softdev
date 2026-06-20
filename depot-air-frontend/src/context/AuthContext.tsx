@@ -15,9 +15,12 @@ interface User {
     rating: number;
     verificationStatus: string;
     profileCompletion: number;
-    specialty: string;
-    mainLocation: string;
-  };
+    specialty?: string | null;
+    mainLocation?: string | null;
+    pricePerLiter?: number;
+    defaultCapacity?: number;
+    imageUrl?: string | null;
+  } | null;
 }
 
 interface AuthContextType {
@@ -85,8 +88,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const res = await userAPI.getProfile();
       const updatedUser = res.data.data;
-      setUser(updatedUser);
-      localStorage.setItem('user', JSON.stringify(updatedUser));
+      const nextUser = user ? { ...user, ...updatedUser } : updatedUser;
+      setUser(nextUser);
+      localStorage.setItem('user', JSON.stringify(nextUser));
     } catch {
       // If profile fetch fails, keep existing user data
     }

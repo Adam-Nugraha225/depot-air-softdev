@@ -34,7 +34,18 @@ exports.register = async (req, res, next) => {
         email,
         password: hashedPassword,
         role,
-        ...(role === 'VENDOR' ? { vendorProfile: { create: {} } } : {}),
+        ...(role === 'VENDOR' ? {
+          vendorProfile: {
+            create: {
+              verificationStatus: 'PENDING',
+              profileCompletion: 0,
+              specialty: null,
+              mainLocation: null,
+              pricePerLiter: 0,
+              defaultCapacity: 0,
+            }
+          }
+        } : {}),
       },
       select: { id: true, name: true, email: true, role: true }
     });

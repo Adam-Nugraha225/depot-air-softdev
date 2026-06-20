@@ -4,8 +4,8 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/components/ui/Toast';
-import { orderAPI } from '@/lib/api';
-import { Landmark, CreditCard, DollarSign, ShieldCheck, Check, X, Loader2, ChevronRight, ArrowRight } from 'lucide-react';
+import { orderAPI, userAPI } from '@/lib/api';
+import { Landmark, CreditCard, DollarSign, ShieldCheck, Check, X, Loader2, ChevronRight, ArrowRight, MapPin, Plus } from 'lucide-react';
 
 interface VendorData {
   id: string;
@@ -15,6 +15,7 @@ interface VendorData {
   pricePerLiter: number;
   volume: number;
   totalPrice: number;
+  imageUrl?: string;
 }
 
 export default function BuyerPayment() {
@@ -29,32 +30,75 @@ export default function BuyerPayment() {
   const [orderNumber, setOrderNumber] = useState('');
   const [paymentDate, setPaymentDate] = useState('');
 
+  // Address selection states
+  const [addresses, setAddresses] = useState<any[]>([]);
+  const [selectedAddressId, setSelectedAddressId] = useState<string>('');
+  const [loadingAddresses, setLoadingAddresses] = useState(true);
+  const [deliveryNotes, setDeliveryNotes] = useState('');
+
   useEffect(() => {
     const dataStr = sessionStorage.getItem('selectedVendor');
     if (dataStr) {
       setVendorData(JSON.parse(dataStr));
     } else {
-      // Fallback or redirect if no vendor selected
       router.push('/buyer/dashboard');
     }
   }, [router]);
 
+  useEffect(() => {
+    const fetchAddresses = async () => {
+      try {
+        const res = await userAPI.getAddresses();
+        const addrs = res.data.data || [];
+        setAddresses(addrs);
+        const primary = addrs.find((a: any) => a.isPrimary);
+        if (primary) {
+          setSelectedAddressId(primary.id);
+        } else if (addrs.length > 0) {
+          setSelectedAddressId(addrs[0].id);
+        }
+      } catch (err) {
+        showToast('Gagal memuat alamat pengiriman.', 'error');
+      } finally {
+        setLoadingAddresses(false);
+      }
+    };
+    fetchAddresses();
+  }, []);
+
   const handlePay = async () => {
     if (!vendorData) return;
+    if (addresses.length === 0) {
+      showToast('Harap tambahkan alamat pengiriman terlebih dahulu di Pengaturan.', 'error');
+      return;
+    }
+    if (!selectedAddressId) {
+      showToast('Pilih alamat pengiriman terlebih dahulu.', 'error');
+      return;
+    }
+
     setPaying(true);
     try {
       const paymentMethodLabel = paymentMethod === 'BANK_TRANSFER' ? 'Transfer Bank' :
                                    paymentMethod === 'COD' ? 'Cash On Delivery (COD)' :
                                    `Virtual Account ${selectedBank}`;
+      
+      const chosenAddress = addresses.find(a => a.id === selectedAddressId);
+      const addressStr = chosenAddress 
+        ? `${chosenAddress.recipientName}, ${chosenAddress.street}, ${chosenAddress.district}, ${chosenAddress.city}, ${chosenAddress.province} ${chosenAddress.postalCode}${chosenAddress.details ? ` (${chosenAddress.details})` : ''}`
+        : '';
+
       const res = await orderAPI.createOrder({
         vendorId: vendorData.id,
         volume: vendorData.volume,
         paymentMethod: paymentMethodLabel,
         serviceFee: 0,
+        deliveryNotes: deliveryNotes || undefined,
+        address: addressStr || undefined
       });
       
       const createdOrder = res.data.data;
-      setOrderNumber(createdOrder.orderNumber || 'VH-88291');
+      setOrderNumber(createdOrder.orderNumber || '');
       
       const date = new Date();
       const formattedDate = date.toLocaleDateString('id-ID', {
@@ -67,8 +111,10 @@ export default function BuyerPayment() {
       setSuccess(true);
       sessionStorage.removeItem('selectedVendor');
       showToast('Pembayaran berhasil! Pesanan Anda segera diproses.', 'success');
-    } catch (err) {
-      showToast('Gagal memproses pembayaran. Coba lagi.', 'error');
+    } catch (err: any) {
+      console.error('Payment Error details:', err);
+      const errMsg = err.response?.data?.message || err.message || 'Gagal memproses pembayaran. Coba lagi.';
+      showToast(`Gagal: ${errMsg}`, 'error');
     } finally {
       setPaying(false);
     }
@@ -82,8 +128,8 @@ export default function BuyerPayment() {
     );
   }
 
-  const subtotal = vendorData.totalPrice - 50000;
-  const biayaLayanan = 50000;
+  const biayaLayanan = 0;
+  const subtotal = vendorData.totalPrice;
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -198,6 +244,62 @@ export default function BuyerPayment() {
               </div>
             </div>
           </div>
+
+          {/* Address Selection */}
+          <div className="card p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-base font-bold text-slate-800">Alamat Pengiriman</h3>
+                <p className="text-xs text-slate-500 mt-0.5">Pilih alamat tujuan pengiriman air Anda.</p>
+              </div>
+              <a href="/buyer/settings" className="flex items-center gap-1 text-[10px] font-bold text-primary-600 hover:text-primary-700 hover:underline">
+                <Plus className="w-3 h-3" /> Kelola Alamat
+              </a>
+            </div>
+
+            {loadingAddresses ? (
+              <div className="flex justify-center py-4"><Loader2 className="w-5 h-5 text-primary-500 animate-spin" /></div>
+            ) : addresses.length === 0 ? (
+              <div className="p-4 rounded-xl border-2 border-dashed border-slate-200 text-center">
+                <MapPin className="w-6 h-6 text-slate-300 mx-auto mb-2" />
+                <p className="text-xs text-slate-500 mb-2">Belum ada alamat tersimpan.</p>
+                <a href="/buyer/settings" className="text-xs font-bold text-primary-600 hover:underline">+ Tambah Alamat di Pengaturan</a>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {addresses.map((addr: any) => (
+                  <div
+                    key={addr.id}
+                    onClick={() => setSelectedAddressId(addr.id)}
+                    className={`p-3.5 rounded-xl border-2 cursor-pointer transition-all flex items-start justify-between gap-3 ${
+                      selectedAddressId === addr.id ? 'border-primary-500 bg-primary-50/20' : 'border-slate-100 bg-white hover:border-slate-200'
+                    }`}
+                  >
+                    <div className="flex gap-3 min-w-0">
+                      <MapPin className={`w-4 h-4 mt-0.5 flex-shrink-0 ${selectedAddressId === addr.id ? 'text-primary-500' : 'text-slate-400'}`} />
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 mb-0.5">
+                          <h4 className="font-bold text-xs text-slate-800 truncate">{addr.recipientName}</h4>
+                          {addr.isPrimary && (
+                            <span className="px-1.5 py-0.5 bg-primary-100 text-primary-700 font-bold rounded-full text-[8px] flex-shrink-0">UTAMA</span>
+                          )}
+                        </div>
+                        <p className="text-[11px] text-slate-600 font-medium truncate">{addr.street}</p>
+                        <p className="text-[10px] text-slate-400">{addr.district}, {addr.city}, {addr.province} {addr.postalCode}</p>
+                      </div>
+                    </div>
+                    <div className="pt-1 flex-shrink-0">
+                      <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                        selectedAddressId === addr.id ? 'border-primary-500 bg-primary-500' : 'border-slate-300 bg-white'
+                      }`}>
+                        {selectedAddressId === addr.id && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Right Side - Order Summary Card */}
@@ -208,12 +310,12 @@ export default function BuyerPayment() {
             {/* Vendor info snippet */}
             <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl border border-slate-100">
               <div className="w-10 h-10 rounded-lg overflow-hidden bg-slate-200">
-                <img src="/images/water_truck.png" alt={vendorData.name} className="w-full h-full object-cover" />
+                <img src={vendorData.imageUrl || "/images/water_truck.png"} alt={vendorData.name} className="w-full h-full object-cover" />
               </div>
               <div className="flex-1 min-w-0">
                 <span className="inline-block text-[9px] font-bold bg-primary-100 text-primary-700 px-1.5 py-0.5 rounded mb-0.5">VENDOR</span>
                 <h4 className="font-bold text-slate-850 text-xs truncate">{vendorData.name}</h4>
-                <p className="text-[10px] text-slate-500">Air Bersih 8kL</p>
+                <p className="text-[10px] text-slate-500">Air Bersih {vendorData.volume.toLocaleString()} Liter</p>
               </div>
             </div>
 
@@ -301,11 +403,11 @@ export default function BuyerPayment() {
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Ringkasan Pesanan</p>
               
               <div className="flex justify-between">
-                <span className="text-slate-600 font-medium">Air Bersih 8.000 Liter</span>
+                <span className="text-slate-600 font-medium">Air Bersih {vendorData.volume.toLocaleString()} Liter</span>
                 <span className="font-semibold text-slate-800">Rp {subtotal.toLocaleString()}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-500">Mata Air Gunung Papandayan</span>
+                <span className="text-slate-500">{vendorData.name}</span>
                 <span className="text-slate-400">({vendorData.mainLocation})</span>
               </div>
               <div className="flex justify-between border-t border-slate-100 pt-2.5">

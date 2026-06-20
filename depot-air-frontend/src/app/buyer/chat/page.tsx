@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/components/ui/Toast';
-import { chatAPI } from '@/lib/api';
+import { chatAPI, orderAPI } from '@/lib/api';
 import { Send, MessageSquare, Loader2, Search, Paperclip, MapPin, Phone, Video, MoreVertical, Image as ImageIcon, Smile, SquarePen } from 'lucide-react';
 
 interface ChatUser {
@@ -53,9 +53,81 @@ export default function BuyerChat() {
   const loadChats = async () => {
     try {
       const res = await chatAPI.getActiveChats();
-      setChats(res.data.data);
-      if (res.data.data.length > 0 && !selectedChat) {
-        selectChat(res.data.data[0].user);
+      const currentChats = res.data.data || [];
+      const updatedChats = [...currentChats];
+
+      // Fetch active orders to auto-populate chat contacts
+      let uniqueContacts: Record<string, { id: string; name: string; role: string }> = {};
+      try {
+        const ordersRes = await orderAPI.getOrders();
+        const activeOrders = ordersRes.data.data || [];
+        activeOrders.forEach((o: any) => {
+          if (user?.role === 'BUYER' && o.vendor && o.vendor.id) {
+            uniqueContacts[o.vendor.id] = {
+              id: o.vendor.id,
+              name: o.vendor.name,
+              role: 'VENDOR'
+            };
+          } else if (user?.role === 'VENDOR' && o.buyer && o.buyer.id) {
+            uniqueContacts[o.buyer.id] = {
+              id: o.buyer.id,
+              name: o.buyer.name,
+              role: 'BUYER'
+            };
+          }
+        });
+      } catch (err) {
+        console.error("Gagal memuat kontak dari pesanan", err);
+      }
+
+      // Check query parameters
+      if (typeof window !== 'undefined') {
+        const params = new URLSearchParams(window.location.search);
+        const queryVendorId = params.get('vendorId');
+        const queryVendorName = params.get('vendorName');
+        if (queryVendorId && queryVendorName) {
+          uniqueContacts[queryVendorId] = {
+            id: queryVendorId,
+            name: queryVendorName,
+            role: 'VENDOR'
+          };
+        }
+      }
+
+      // Prepend contacts not already in active chats list
+      Object.values(uniqueContacts).forEach((contact: any) => {
+        const exists = currentChats.some((c: any) => c.user.id === contact.id);
+        if (!exists) {
+          updatedChats.unshift({
+            user: {
+              id: contact.id,
+              name: contact.name,
+              role: contact.role
+            },
+            lastMessage: 'Mulai obrolan dengan mengirim pesan...',
+            lastMessageAt: new Date().toISOString(),
+            isFromMe: false
+          });
+        }
+      });
+
+      setChats(updatedChats);
+
+      // Auto-select chat based on query params or active contacts
+      if (typeof window !== 'undefined') {
+        const params = new URLSearchParams(window.location.search);
+        const queryVendorId = params.get('vendorId');
+        if (queryVendorId) {
+          const match = updatedChats.find((c: any) => c.user.id === queryVendorId);
+          if (match) {
+            selectChat(match.user);
+            return;
+          }
+        }
+      }
+
+      if (updatedChats.length > 0 && !selectedChat) {
+        selectChat(updatedChats[0].user);
       }
     } catch { } finally {
       setLoading(false);

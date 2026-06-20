@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useToast } from '@/components/ui/Toast';
 import { fleetAPI, orderAPI } from '@/lib/api';
-import { Truck, Plus, X, Loader2, Save, MapPin, User, ChevronDown, AlertCircle, CheckCircle2, Clock, Wrench, Search } from 'lucide-react';
+import { Truck, Plus, X, Loader2, Save, ChevronDown, Wrench, Search } from 'lucide-react';
 
 interface Fleet {
   id: string;
@@ -40,7 +40,7 @@ export default function SellerFleet() {
   const [formDriverName, setFormDriverName] = useState('');
   const [vehicleModel, setVehicleModel] = useState('');
   const [plateNumber, setPlateNumber] = useState('');
-  const [capacityLiters, setCapacityLiters] = useState('15000');
+  const [capacityLiters, setCapacityLiters] = useState('');
   
   const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState('');
@@ -82,7 +82,7 @@ export default function SellerFleet() {
       setFormDriverName('');
       setVehicleModel('');
       setPlateNumber('');
-      setCapacityLiters('15000');
+      setCapacityLiters('');
       showToast('Kendaraan baru berhasil ditambahkan!', 'success');
     } catch {
       showToast('Gagal menambahkan kendaraan. Coba lagi.', 'error');
@@ -137,11 +137,26 @@ export default function SellerFleet() {
   // Extract vehicle & driver details from fleet fields
   const parseFleetDetails = (fleet: Fleet) => {
     const driver = fleet.driverName;
-    const model = fleet.truckType || 'Volvo FH16';
-    const plate = fleet.licensePlate || 'B 1234 CD';
+    const model = fleet.truckType || 'Model belum diisi';
+    const plate = fleet.licensePlate || 'Belum diisi';
     const modelPlate = `${model}, Plat: ${plate}`;
     return { driver, modelPlate };
   };
+
+  const filteredFleets = fleets.filter((fleet) => {
+    const keyword = search.trim().toLowerCase();
+    const matchesSearch = !keyword ||
+      fleet.truckId.toLowerCase().includes(keyword) ||
+      fleet.driverName.toLowerCase().includes(keyword) ||
+      (fleet.truckType || '').toLowerCase().includes(keyword) ||
+      (fleet.licensePlate || '').toLowerCase().includes(keyword);
+    const matchesStatus = statusFilter === 'Semua Status' || fleet.status === statusFilter;
+    return matchesSearch && matchesStatus;
+  });
+
+  const availableCount = fleets.filter(fleet => fleet.status === 'TERSEDIA').length;
+  const activeCount = fleets.filter(fleet => fleet.status === 'SEDANG_BERTUGAS').length;
+  const maintenanceCount = fleets.filter(fleet => fleet.status === 'PEMELIHARAAN').length;
 
   return (
     <div className="space-y-6 animate-fade-in text-xs">
@@ -160,7 +175,7 @@ export default function SellerFleet() {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
         <div className="card p-4 flex items-center justify-between border border-slate-100 bg-white">
           <div className="space-y-1">
-            <h4 className="text-2xl font-bold text-slate-800">8</h4>
+            <h4 className="text-2xl font-bold text-slate-800">{availableCount}</h4>
             <p className="text-[10px] text-slate-400">Siap Dikirim</p>
           </div>
           <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-500">
@@ -170,7 +185,7 @@ export default function SellerFleet() {
 
         <div className="card p-4 flex items-center justify-between border border-slate-100 bg-white">
           <div className="space-y-1">
-            <h4 className="text-2xl font-bold text-slate-800">12</h4>
+            <h4 className="text-2xl font-bold text-slate-800">{activeCount}</h4>
             <p className="text-[10px] text-slate-400">Pengiriman Aktif</p>
           </div>
           <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-500">
@@ -180,7 +195,7 @@ export default function SellerFleet() {
 
         <div className="card p-4 flex items-center justify-between border border-slate-100 bg-white">
           <div className="space-y-1">
-            <h4 className="text-2xl font-bold text-slate-800">2</h4>
+            <h4 className="text-2xl font-bold text-slate-800">{maintenanceCount}</h4>
             <p className="text-[10px] text-slate-400">Di Bengkel</p>
           </div>
           <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center text-red-500">
@@ -233,14 +248,14 @@ export default function SellerFleet() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 bg-white">
-              {fleets.length === 0 ? (
+              {filteredFleets.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="text-center py-12 text-slate-400 font-semibold">
                     Belum ada armada terdaftar.
                   </td>
                 </tr>
               ) : (
-                fleets.map((fleet) => {
+                filteredFleets.map((fleet) => {
                   const { driver, modelPlate } = parseFleetDetails(fleet);
                   const status = fleet.status === 'TERSEDIA' ? 'Tersedia' : 
                                  fleet.status === 'SEDANG_BERTUGAS' ? 'Sedang Bertugas' : 'Pemeliharaan';
@@ -257,12 +272,12 @@ export default function SellerFleet() {
                           </div>
                           <div>
                             <p className="font-bold text-slate-800">{modelPlate.split(',')[0]}</p>
-                            <p className="text-[10px] text-slate-400 mt-0.5">{modelPlate.split(',')[1]?.trim() || 'Plat: B 1234 CD'}</p>
+                            <p className="text-[10px] text-slate-400 mt-0.5">{modelPlate.split(',')[1]?.trim() || 'Plat: Belum diisi'}</p>
                           </div>
                         </div>
                       </td>
                       <td className="px-5 py-4 font-semibold text-slate-700">
-                        {fleet.capacity ? `${fleet.capacity.toLocaleString()} L` : '15.000 L'}
+                        {fleet.capacity ? `${fleet.capacity.toLocaleString()} L` : 'Belum diisi'}
                       </td>
                       <td className="px-5 py-4">
                         <span className={getStatusBadge(fleet.status)}>{status}</span>
@@ -311,12 +326,12 @@ export default function SellerFleet() {
 
         {/* Mobile View: Fleet Cards */}
         <div className="md:hidden space-y-4">
-          {fleets.length === 0 ? (
+          {filteredFleets.length === 0 ? (
             <div className="card p-8 text-center text-slate-400 font-semibold">
               Belum ada armada terdaftar.
             </div>
           ) : (
-            fleets.map((fleet, i) => {
+            filteredFleets.map((fleet, i) => {
               const { driver, modelPlate } = parseFleetDetails(fleet);
               const status = fleet.status === 'TERSEDIA' ? 'Tersedia' : 
                              fleet.status === 'SEDANG_BERTUGAS' ? 'Sedang Bertugas' : 'Pemeliharaan';
@@ -334,14 +349,14 @@ export default function SellerFleet() {
                     </div>
                     <div>
                       <p className="font-bold text-slate-800">{modelPlate.split(',')[0]}</p>
-                      <p className="text-[10px] text-slate-405 mt-0.5">{modelPlate.split(',')[1]?.trim() || 'Plat: B 1234 CD'}</p>
+                      <p className="text-[10px] text-slate-405 mt-0.5">{modelPlate.split(',')[1]?.trim() || 'Plat: Belum diisi'}</p>
                     </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-y-2 gap-x-2 text-xs border-t border-slate-100 pt-3">
                     <div>
                       <p className="text-slate-400 font-semibold text-[10px] uppercase">Kapasitas</p>
-                      <p className="font-bold text-slate-700 mt-0.5">{fleet.capacity ? `${fleet.capacity.toLocaleString()} L` : '15.000 L'}</p>
+                      <p className="font-bold text-slate-700 mt-0.5">{fleet.capacity ? `${fleet.capacity.toLocaleString()} L` : 'Belum diisi'}</p>
                     </div>
                     <div>
                       <p className="text-slate-400 font-semibold text-[10px] uppercase">Driver</p>
@@ -387,13 +402,13 @@ export default function SellerFleet() {
         </div>
 
         {/* Footer info pagination matching PDF (Responsive) */}
-        {fleets.length > 0 && (
+        {filteredFleets.length > 0 && (
           <div className="card px-5 py-4 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
-            <span className="text-center sm:text-left">Menampilkan 1 hingga {fleets.length} dari {fleets.length} data</span>
+            <span className="text-center sm:text-left">Menampilkan 1 hingga {filteredFleets.length} dari {filteredFleets.length} data</span>
             <div className="flex items-center gap-1">
               <button className="px-2 py-1 rounded border border-slate-200 bg-white text-slate-400 cursor-not-allowed hover:bg-slate-50">&lt;</button>
               <button className="px-3 py-1 rounded bg-primary-600 text-white font-bold">1</button>
-              <button className="px-3 py-1 rounded border border-slate-200 bg-white hover:bg-slate-50">2</button>
+              
               <button className="px-2 py-1 rounded border border-slate-200 bg-white hover:bg-slate-50">&gt;</button>
             </div>
           </div>
@@ -428,6 +443,11 @@ export default function SellerFleet() {
               <div>
                 <label className="font-bold text-slate-500 mb-1.5 block">Nama Driver</label>
                 <input type="text" className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-primary-500/20 text-xs" placeholder="Contoh: John Doe" value={formDriverName} onChange={(e) => setFormDriverName(e.target.value)} required />
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-500 mb-1.5 block">Kapasitas Liter</label>
+                <input type="number" min="1" className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-primary-500/20 text-xs" placeholder="Contoh: 8000" value={capacityLiters} onChange={(e) => setCapacityLiters(e.target.value)} />
               </div>
 
               <button type="submit" disabled={saving} className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-primary-600 hover:bg-primary-700 text-white font-bold text-xs shadow-md transition-all mt-4">

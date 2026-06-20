@@ -33,12 +33,13 @@ model VendorProfile {
   userId             String   @unique
   user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   rating             Float    @default(0.0)
-  verificationStatus String   @default("VERIFIED") // "PENDING" | "VERIFIED"
-  profileCompletion  Int      @default(100)
-  specialty          String?  @default("Bulk Water, Bottled Water, Fleet Logistics")
+  verificationStatus String   @default("PENDING") // "PENDING" | "VERIFIED"
+  profileCompletion  Int      @default(0)
+  specialty          String?
   mainLocation       String?
-  pricePerLiter      Float    @default(300)
-  defaultCapacity    Int      @default(8000)
+  pricePerLiter      Float    @default(0)
+  defaultCapacity    Int      @default(0)
+  imageUrl           String?
 }
 
 model Address {
@@ -75,6 +76,7 @@ model Order {
   paymentMethod    String?
   paymentStatus    String   @default("PENDING") // "PENDING" | "LUNAS" | "GAGAL"
   deliveryNotes    String?
+  address          String?
   waterType        String?
   deliverySchedule String?
   status           String   @default("MENUNGGU_KONFIRMASI") // MENUNGGU_KONFIRMASI | DIKONFIRMASI | DISIAPKAN | DALAM_PERJALANAN | SELESAI | DITOLAK
